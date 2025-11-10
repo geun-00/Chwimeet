@@ -25,19 +25,23 @@ public class CookieHelper {
     }
 
     public void setCookie(String name, String value) {
-        if (value == null) value = "";
+        boolean delete = (value == null) || value.isBlank();
+        String host = req.getServerName();
+        boolean isLocal = "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host);
 
-        Cookie cookie = new Cookie(name, value);
+        String domain = System.getenv("COOKIE_DOMAIN"); // 로컬이면 비워두기
+        boolean secure = Boolean.parseBoolean(System.getenv().getOrDefault("COOKIE_SECURE",
+                isLocal ? "false" : "true"));
+
+        Cookie cookie = new Cookie(name, delete ? "" : value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setDomain("localhost");
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "strict");
+        cookie.setSecure(secure);
+        cookie.setMaxAge(delete ? 0 : 60 * 60 * 24 * 365);
 
-        if(value.isBlank()) {
-            cookie.setMaxAge(0);
-        } else {
-            cookie.setMaxAge(60 * 60 * 24 * 365);
+        // 로컬에서는 domain 지정하지 말기 (HostOnly 쿠키)
+        if (!isLocal && domain != null && !domain.isBlank()) {
+            cookie.setDomain(domain.startsWith(".") ? domain : domain);
         }
 
         resp.addCookie(cookie);
