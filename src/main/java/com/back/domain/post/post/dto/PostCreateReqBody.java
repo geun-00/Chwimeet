@@ -29,7 +29,7 @@ public record PostCreateReqBody(
         Long categoryId,
         @NotNull(message = "보증금을 입력하세요.")
         Integer deposit,
-        @NotNull(message = "대여금을 입력하세요.")
+        @NotNull(message = "대여료을 입력하세요.")
         Integer fee,
         @Size(max = 5, message = "옵션은 최대 5개까지 등록할 수 있습니다.")
         List<PostOptionReqBody> options,
