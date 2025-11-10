@@ -18,8 +18,8 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 20        # ← 무한 대기 방지
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false  # ← 드래프트 PR 스킵
+    timeout-minutes: 20
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env:
       CI: true
       SPRING_PROFILES_ACTIVE: test
@@ -29,6 +29,36 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # .env 파일 생성
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.DOT_ENV }}" > .env
+          echo "✅ .env file created"
+
+      # Docker Compose로 MySQL & Redis 시작
+      - name: Start MySQL and Redis
+        run: |
+          docker compose up -d
+          echo "⏳ Waiting for services to be ready..."
+          sleep 10
+
+      # 서비스 헬스체크
+      - name: Wait for MySQL
+        run: |
+          until docker exec chwimeet-mysql mysqladmin ping -h localhost -uroot -proot123414 --silent; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+          echo "✅ MySQL is ready"
+
+      - name: Wait for Redis
+        run: |
+          until docker exec chwimeet-redis redis-cli -a root123414 ping | grep -q PONG; do
+            echo "Waiting for Redis..."
+            sleep 2
+          done
+          echo "✅ Redis is ready"
 
       # gradle wrapper 보안 검증
       - name: Validate Gradle Wrapper
@@ -42,7 +72,7 @@ jobs:
           java-version: "24"
           cache: gradle
 
-      # 코드 toolchain용 JDK 25 미리 설치 (Gradle이 재다운로드 안 하도록)
+      # 코드 toolchain용 JDK 25 미리 설치
       - name: Provision Java 25 for toolchain
         uses: actions/setup-java@v4
         with:
@@ -53,7 +83,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
-          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}  # ← 포크 PR 캐시 권한 회피
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
 
       - name: Make gradlew executable (Linux)
         run: chmod +x ./gradlew
@@ -71,7 +101,7 @@ jobs:
       - name: Assemble (no tests)
         run: ./gradlew assemble -x test -x jacocoTestReport --no-daemon
 
-      # 테스트 결과 업로드 (없으면 무시)
+      # 테스트 결과 업로드
       - name: Upload test results (JUnit XML)
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,9 +109,9 @@ jobs:
           name: junit-results
           path: build/test-results/test
           if-no-files-found: ignore
-          retention-days: 3      # ← 보관 3일
+          retention-days: 3
 
-      # 테스트 HTML 리포트도 같이
+      # 테스트 HTML 리포트
       - name: Upload test report (HTML)
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,7 +120,7 @@ jobs:
           path: build/reports/tests/test
           if-no-files-found: ignore
 
-      # 커버리지 리포트 업로드 (없으면 무시)
+      # 커버리지 리포트 업로드
       - name: Upload coverage report (JaCoCo HTML)
         if: always()
         uses: actions/upload-artifact@v4
@@ -99,3 +129,8 @@ jobs:
           path: build/reports/jacoco/test/html
           if-no-files-found: ignore
           retention-days: 3
+
+      # Docker Compose 정리
+      - name: Stop Docker services
+        if: always()
+        run: docker compose down -v

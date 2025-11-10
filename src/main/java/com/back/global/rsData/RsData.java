@@ -14,4 +14,14 @@ public record RsData<T>(
     public RsData(String resultCode, String msg, T data) {
         this(resultCode, Integer.parseInt(resultCode.split("-",2)[0]), msg, data);
     }
+
+    public static <T> RsData<T> success(String msg, T data) {
+        return new RsData<>("S-1", msg, data);
+    }
+    public static <T> RsData<T> success(String msg) {
+        return new RsData<>("S-1", msg, null);
+    }
+    public static <T> RsData<T> fail(String msg) {
+        return new RsData<>("F-1", msg, null);
+    }
 }

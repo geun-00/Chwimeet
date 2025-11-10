@@ -48,15 +48,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     // spring doc
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
-
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+// ✅ JaCoCo 버전을 Java 25를 지원하는 최신 버전으로 업데이트
 jacoco {
-    toolVersion = "0.8.12" // 최신 안정 버전 고정(예: 0.8.12)
+    toolVersion = "0.8.13" // Java 25 지원
 }
 
 tasks.test {
