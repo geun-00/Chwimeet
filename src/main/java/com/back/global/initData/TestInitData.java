@@ -32,7 +32,7 @@ public class TestInitData {
     ApplicationRunner testInitDataApplicationRunner() {
         return arg -> {
             self.work1();
-            self.work2();
+//            self.work2();
         };
     }
 

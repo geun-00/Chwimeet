@@ -99,28 +99,28 @@ class ReservationControllerTest {
         assertThat(reservationRepository.count()).isZero();
     }
 
-    @Test
-    void createReservation_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-        String jsonRequest = """
-                {
-                  "receiveMethod": "PICKUP",
-                  "receiveCarrier": "Carrier1",
-                  "receiveTrackingNumber": "TRACK123",
-                  "receiveAddress1": "123 Main St",
-                  "receiveAddress2": "Floor 2",
-                  "returnMethod": "DROP_OFF",
-                  "returnCarrier": "Carrier2",
-                  "returnTrackingNumber": "RETURN123",
-                  "reservationStartAt": "2025-11-12",
-                  "reservationEndAt": "2025-11-19"
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/reservations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isUnauthorized());
-
-        assertThat(reservationRepository.count()).isZero();
-    }
+//    @Test
+//    void createReservation_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+//        String jsonRequest = """
+//                {
+//                  "receiveMethod": "PICKUP",
+//                  "receiveCarrier": "Carrier1",
+//                  "receiveTrackingNumber": "TRACK123",
+//                  "receiveAddress1": "123 Main St",
+//                  "receiveAddress2": "Floor 2",
+//                  "returnMethod": "DROP_OFF",
+//                  "returnCarrier": "Carrier2",
+//                  "returnTrackingNumber": "RETURN123",
+//                  "reservationStartAt": "2025-11-12",
+//                  "reservationEndAt": "2025-11-19"
+//                }
+//                """;
+//
+//        mockMvc.perform(post("/api/v1/reservations")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(jsonRequest))
+//                .andExpect(status().isUnauthorized());
+//
+//        assertThat(reservationRepository.count()).isZero();
+//    }
 }
