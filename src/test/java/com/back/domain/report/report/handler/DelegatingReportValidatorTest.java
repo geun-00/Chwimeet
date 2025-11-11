@@ -19,15 +19,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class DelegatingReportValidatorTest extends IntegrationTestSupport {
 
     @Autowired EntityManager em;
-    @Autowired
-    DelegatingReportValidator reportValidator;
+    @Autowired DelegatingReportValidator reportValidator;
 
     Member member;
 
     @BeforeEach
     void setUp() {
-        member = new Member();
-        em.persist(member);
+        member = createAndPersistMember("test-0@email.com", "01011223344", "myname-0");
     }
 
     @Test
@@ -65,5 +63,20 @@ class DelegatingReportValidatorTest extends IntegrationTestSupport {
         assertThatThrownBy(() -> reportValidator.validateTargetId(ReportType.USER, 999L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("지원하지 않는 대상: ");
+    }
+
+    private Member createAndPersistMember(String email, String phoneNumber, String nickname) {
+        Member member = Member.builder()
+                              .email(email)
+                              .password("5ZspO3R")
+                              .name("Nikolay Mou")
+                              .phoneNumber(phoneNumber)
+                              .address1("173.137.115.206")
+                              .address2("88.181.176.116")
+                              .nickname(nickname)
+                              .isBanned(false)
+                              .build();
+        em.persist(member);
+        return member;
     }
 }

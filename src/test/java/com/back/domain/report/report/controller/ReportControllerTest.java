@@ -56,13 +56,12 @@ class ReportControllerTest extends ControllerTestSupport {
                        handler().handlerType(ReportController.class),
                        handler().methodName("postReport"),
                        status().isOk(),
-                       jsonPath("$.msg").value("신고가 등록되었습니다."),
-                       jsonPath("$.data.reportId").value(response.reportId()),
-                       jsonPath("$.data.reportType").value(response.reportType().name()),
-                       jsonPath("$.data.targetId").value(response.targetId()),
-                       jsonPath("$.data.comment").value(response.comment()),
-                       jsonPath("$.data.authorId").value(response.authorId()),
-                       jsonPath("$.data.createdAt").exists()
+                       jsonPath("$.reportId").value(response.reportId()),
+                       jsonPath("$.reportType").value(response.reportType().name()),
+                       jsonPath("$.targetId").value(response.targetId()),
+                       jsonPath("$.comment").value(response.comment()),
+                       jsonPath("$.authorId").value(response.authorId()),
+                       jsonPath("$.createdAt").exists()
                );
         verify(reportService).postReport(any(ReportReqBody.class), anyLong());
     }
