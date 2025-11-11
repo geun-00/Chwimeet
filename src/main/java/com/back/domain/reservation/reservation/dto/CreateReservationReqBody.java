@@ -1,0 +1,28 @@
+package com.back.domain.reservation.reservation.dto;
+
+import com.back.domain.reservation.reservation.common.ReservationDeliveryMethod;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record CreateReservationReqBody(
+        @NotNull
+        ReservationDeliveryMethod receiveMethod,
+        String receiveCarrier,
+        String receiveTrackingNumber,
+        String receiveAddress1,
+        String receiveAddress2,
+        @NotNull
+        ReservationDeliveryMethod returnMethod,
+        String returnCarrier,
+        String returnTrackingNumber,
+        @NotNull
+        @Future // 현재 시간 이후일 것
+        LocalDate reservationStartAt,
+        @NotNull
+        @Future
+        LocalDate reservationEndAt
+        // TODO: 게시글 ID 추가 예정
+) {
+}
