@@ -1,11 +1,9 @@
 package com.back.domain.post.post.controller;
 
+import com.back.domain.member.member.dto.AuthorDto;
 import com.back.domain.post.post.common.ReceiveMethod;
 import com.back.domain.post.post.common.ReturnMethod;
-import com.back.domain.post.post.dto.PostCreateReqBody;
-import com.back.domain.post.post.dto.PostImageReqBody;
-import com.back.domain.post.post.dto.PostListResBody;
-import com.back.domain.post.post.dto.PostOptionReqBody;
+import com.back.domain.post.post.dto.*;
 import com.back.domain.post.post.service.PostService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
@@ -117,6 +115,62 @@ class PostControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("맥북 대여합니다."));
+    }
+
+    @Test
+    @DisplayName("게시글 상세조회")
+    void getPostDetail_success() throws Exception {
+        //given
+        Long postId = 1L;
+
+        PostDetailResBody MockDetail = PostDetailResBody.builder()
+                .postId(postId)
+                .title("맥북 대여합니다.")
+                .content("맥북프로 16인치 풀옵션입니다.")
+                .categoryId(1L)
+                .regionIds(List.of(1L))
+                .receiveMethod(ReceiveMethod.DIRECT)
+                .returnMethod(ReturnMethod.DIRECT)
+                .returnAddress1("서울특별시 강남구 테헤란로 1")
+                .returnAddress2("101호")
+                .deposit(10000)
+                .fee(3000)
+                .options(List.of(
+                        PostOptionResBody.builder()
+                                .name("마우스 포함")
+                                .deposit(5000)
+                                .fee(0)
+                                .build()
+                ))
+                .images(List.of(
+                        PostImageResBody.builder()
+                                .file("https://example.com/image1.jpg")
+                                .isPrimary(true)
+                                .build()
+                ))
+                .createdAt(null)
+                .modifiedAt(null)
+                .author(AuthorDto.builder()
+                        .id(10L)
+                        .nickname("jjuchan")
+                        .profileImgUrl("https://example.com/profile.jpg")
+                        .build())
+                .isFavorite(true)
+                .isBanned(false)
+                .build();
+
+        BDDMockito.given(postService.getPostById(postId))
+                .willReturn(MockDetail);
+
+        //when & then
+        mockMvc.perform(get("/api/v1/posts/{postId}", postId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postId").value(postId))
+                .andExpect(jsonPath("$.title").value("맥북 대여합니다."))
+                .andExpect(jsonPath("$.author.nickname").value("jjuchan"))
+                .andExpect(jsonPath("$.images[0].isPrimary").value(true))
+                .andExpect(jsonPath("$.options[0].name").value("마우스 포함"));
     }
 }
 

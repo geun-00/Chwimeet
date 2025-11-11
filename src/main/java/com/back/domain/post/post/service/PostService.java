@@ -112,8 +112,8 @@ public class PostService {
                 .content(post.getContent())
                 .categoryId(null) // 추후 카테고리 연동 필요
                 .regionIds(List.of()) // 추후 지역 연동 필요
-                .receiveMethod(post.getReceiveMethod().name())
-                .returnMethod(post.getReturnMethod().name())
+                .receiveMethod(post.getReceiveMethod())
+                .returnMethod(post.getReturnMethod())
                 .returnAddress1(post.getReturnAddress1())
                 .returnAddress2(post.getReturnAddress2())
                 .deposit(post.getDeposit())
