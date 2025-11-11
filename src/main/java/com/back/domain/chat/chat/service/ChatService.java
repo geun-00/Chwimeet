@@ -1,10 +1,14 @@
 package com.back.domain.chat.chat.service;
 
+import com.back.domain.chat.chat.dto.CreateChatRoomResBody;
 import com.back.domain.chat.chat.entity.ChatRoom;
 import com.back.domain.chat.chat.repository.ChatMemberRepository;
 import com.back.domain.chat.chat.repository.ChatRoomRepository;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
+import com.back.domain.post.post.entity.Post;
+import com.back.domain.post.post.repository.PostRepository;
+import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,30 +20,32 @@ import java.util.Optional;
 @Transactional
 public class ChatService {
     private final MemberService memberService;
+    private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
 
-    //TODO : postID 받도록 변경
-    public ChatRoom createChatRoom(Long memberId1, Long memberId2) {
-        Member member1 = memberService.getById(memberId1);
-        Member member2 = memberService.getById(memberId2);
+    public CreateChatRoomResBody createChatRoom(Long postId, Long memberId) {
 
-        Optional<ChatRoom> existingRoom = chatRoomRepository
-                .findByTwoMembers(memberId1, memberId2);
+        Post post = postRepository.findById(postId).orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 게시글입니다."));
 
+        Member host = post.getAuthor();
+        Member guest = memberService.getById(memberId);
+
+        Optional<ChatRoom> existingRoom = chatRoomRepository.findByPostAndMembers(postId, host.getId(), guest.getId());
         if (existingRoom.isPresent()) {
-            return existingRoom.get();
+            ChatRoom room = existingRoom.get();
+            return new CreateChatRoomResBody("이미 존재하는 채팅방입니다.", room.getId());
         }
 
-        String roomName = member1.getNickname() + "&" + member2.getNickname();
-
         ChatRoom chatRoom = ChatRoom.builder()
-                .name(roomName)
+                .post(post)
                 .build();
 
-        chatRoom.addMember(member1);
-        chatRoom.addMember(member2);
+        chatRoom.addMember(host);
+        chatRoom.addMember(guest);
 
-        return chatRoomRepository.save(chatRoom);
+        chatRoomRepository.save(chatRoom);
+
+        return new CreateChatRoomResBody("채팅방이 생성되었습니다.", chatRoom.getId());
     }
 }

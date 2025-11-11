@@ -1,10 +1,9 @@
 package com.back.domain.chat.chat.entity;
 
 import com.back.domain.member.member.entity.Member;
+import com.back.domain.post.post.entity.Post;
 import com.back.global.jpa.entity.BaseEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,12 +18,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ChatRoom extends BaseEntity {
-
-    String name;
-    //TODO : post와 연결
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "post_id")
-//    private Post post;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post post;
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
