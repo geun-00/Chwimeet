@@ -1,6 +1,6 @@
 package com.back.domain.category.category.service;
 
-import com.back.domain.category.category.dto.CategoryReqBody;
+import com.back.domain.category.category.dto.CategoryCreateReqBody;
 import com.back.domain.category.category.dto.CategoryResBody;
 import com.back.domain.category.category.entity.Category;
 import com.back.domain.category.category.repository.CategoryRepository;
@@ -16,9 +16,9 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    public CategoryResBody createCategory(CategoryReqBody categoryReqBody) {
-        Long parentId = categoryReqBody.parentId();
-        String categoryName = categoryReqBody.name();
+    public CategoryResBody createCategory(CategoryCreateReqBody categoryCreateReqBody) {
+        Long parentId = categoryCreateReqBody.parentId();
+        String categoryName = categoryCreateReqBody.name();
         if (parentId == null) {
             return createCategoryWithoutParent(categoryName);
         }

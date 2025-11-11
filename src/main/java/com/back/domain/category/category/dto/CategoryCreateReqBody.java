@@ -1,6 +1,6 @@
 package com.back.domain.category.category.dto;
 
-public record CategoryReqBody(
+public record CategoryCreateReqBody(
         Long parentId,
         String name
 ) {

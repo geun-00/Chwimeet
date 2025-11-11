@@ -1,6 +1,6 @@
 package com.back.domain.category.category.controller;
 
-import com.back.domain.category.category.dto.CategoryReqBody;
+import com.back.domain.category.category.dto.CategoryCreateReqBody;
 import com.back.domain.category.category.dto.CategoryResBody;
 import com.back.domain.category.category.service.CategoryService;
 import com.back.global.rsData.RsData;
@@ -15,8 +15,8 @@ public class CategoryAdmController {
     private final CategoryService categoryService;
 
     @PostMapping
-    public RsData<CategoryResBody> createCategory(@RequestBody CategoryReqBody categoryReqBody) {
-        CategoryResBody categoryResBody = categoryService.createCategory(categoryReqBody);
+    public RsData<CategoryResBody> createCategory(@RequestBody CategoryCreateReqBody categoryCreateReqBody) {
+        CategoryResBody categoryResBody = categoryService.createCategory(categoryCreateReqBody);
         return RsData.success("카테고리 등록 성공", categoryResBody);
     }
 }
