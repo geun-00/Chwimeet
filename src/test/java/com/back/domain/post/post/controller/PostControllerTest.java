@@ -4,6 +4,7 @@ import com.back.domain.post.post.common.ReceiveMethod;
 import com.back.domain.post.post.common.ReturnMethod;
 import com.back.domain.post.post.dto.PostCreateReqBody;
 import com.back.domain.post.post.dto.PostImageReqBody;
+import com.back.domain.post.post.dto.PostListResBody;
 import com.back.domain.post.post.dto.PostOptionReqBody;
 import com.back.domain.post.post.service.PostService;
 import com.back.global.rsData.RsData;
@@ -26,6 +27,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,7 +62,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("게시글 등록 성공 (Mock Service)")
+    @DisplayName("게시글 등록")
     void createPost_success() throws Exception {
         // given
         PostCreateReqBody reqBody = PostCreateReqBody.builder()
@@ -89,4 +91,33 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("게시글이 등록되었습니다."));
     }
+
+    @Test
+    @DisplayName("게시글 목록 조회")
+    void getPostList_success() throws Exception {
+        // given
+        List<PostListResBody> mockList = List.of(
+                PostListResBody.builder()
+                        .postId(1L)
+                        .title("맥북 대여합니다.")
+                        .thumbnailImageUrl("https://example.com/thumb1.jpg")
+                        .fee(3000)
+                        .deposit(10000)
+                        .authorNickname("jjuchan")
+                        .build()
+        );
+
+        BDDMockito.given(postService.getPostList())
+                .willReturn(RsData.<List<PostListResBody>>success("게시글 목록 조회 성공", mockList));
+
+
+        // when & then
+        mockMvc.perform(get("/api/v1/posts")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("게시글 목록 조회 성공"))
+                .andExpect(jsonPath("$.data[0].title").value("맥북 대여합니다."));
+    }
+}
 }
