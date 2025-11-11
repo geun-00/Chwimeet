@@ -46,4 +46,10 @@ public class PostController {
         PostDetailResBody body = postService.getPostById(postId);
         return ResponseEntity.ok(body);
     }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<PostListResBody>> getMyPostList(@AuthenticationPrincipal SecurityUser securityUser) {
+        List<PostListResBody> body = postService.getMyPosts(securityUser.getId());
+        return ResponseEntity.ok(body);
+    }
 }

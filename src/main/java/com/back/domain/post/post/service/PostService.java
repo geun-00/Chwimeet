@@ -84,15 +84,15 @@ public class PostService {
                                         .map(img -> img.getImageUrl())
                                         .orElse(null)
                         )
-                        .categoryId(null) // 추후 카테고리 연동 필요
-                        .regionIds(List.of()) // 추후 지역 연동 필요
+                        .categoryId(null) // TODO: 추후 카테고리 연동
+                        .regionIds(List.of()) // TODO: 추후 지역 연동
                         .receiveMethod(post.getReceiveMethod())
                         .returnMethod(post.getReturnMethod())
                         .createdAt(post.getCreatedAt())
                         .authorNickname(post.getAuthor().getNickname())
                         .fee(post.getFee())
                         .deposit(post.getDeposit())
-                        .isFavorite(false) // 추후 즐겨찾기 구현
+                        .isFavorite(false) // TODO: 추후 즐겨찾기 로직 추가
                         .isBanned(post.getIsBanned())
                         .build()
                 )
@@ -110,8 +110,8 @@ public class PostService {
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .categoryId(null) // 추후 카테고리 연동 필요
-                .regionIds(List.of()) // 추후 지역 연동 필요
+                .categoryId(null) // TODO: 추후 카테고리 연동
+                .regionIds(List.of()) // TODO: 추후 지역 연동
                 .receiveMethod(post.getReceiveMethod())
                 .returnMethod(post.getReturnMethod())
                 .returnAddress1(post.getReturnAddress1())
@@ -135,10 +135,39 @@ public class PostService {
                 )
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
-                .author(AuthorDto.from(post.getAuthor()))   // MemberDto 기반 변환
-                .isFavorite(false)                         // 로그인 유저 기준은 추후 로직 추가
+                .author(AuthorDto.from(post.getAuthor()))
+                .isFavorite(false) // TODO: 추후 즐겨찾기 로직 추가
                 .isBanned(post.getIsBanned())
                 .build();
 
+    }
+
+    public List<PostListResBody> getMyPosts(Long memberId) {
+        List<Post> posts = postRepository.findAllByAuthorId(memberId);
+
+        return posts.stream()
+                .map(post -> PostListResBody.builder()
+                        .postId(post.getId())
+                        .title(post.getTitle())
+                        .thumbnailImageUrl(
+                                post.getImages().stream()
+                                        .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                                        .findFirst()
+                                        .map(img -> img.getImageUrl())
+                                        .orElse(null)
+                        )
+                        .categoryId(null) // TODO: 추후 카테고리 연동
+                        .regionIds(List.of()) // TODO: 추후 지역 연동
+                        .receiveMethod(post.getReceiveMethod())
+                        .returnMethod(post.getReturnMethod())
+                        .createdAt(post.getCreatedAt())
+                        .authorNickname(post.getAuthor().getNickname())
+                        .fee(post.getFee())
+                        .deposit(post.getDeposit())
+                        .isFavorite(false) // TODO: 추후 즐겨찾기 로직 추가
+                        .isBanned(post.getIsBanned())
+                        .build()
+                )
+                .collect(Collectors.toList());
     }
 }

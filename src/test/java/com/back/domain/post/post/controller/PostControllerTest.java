@@ -172,5 +172,55 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.images[0].isPrimary").value(true))
                 .andExpect(jsonPath("$.options[0].name").value("마우스 포함"));
     }
+
+    @Test
+    @DisplayName("내 게시글 조회")
+    void getMyPosts_success() throws Exception {
+        // given
+        List<PostListResBody> mockMyPosts = List.of(
+                PostListResBody.builder()
+                        .postId(1L)
+                        .title("맥북 대여합니다.")
+                        .thumbnailImageUrl("https://example.com/thumb1.jpg")
+                        .categoryId(2L)
+                        .regionIds(List.of(1L, 2L))
+                        .receiveMethod(ReceiveMethod.DELIVERY)
+                        .returnMethod(ReturnMethod.DELIVERY)
+                        .fee(5000)
+                        .deposit(10000)
+                        .authorNickname("jjuchan")
+                        .isFavorite(false)
+                        .isBanned(false)
+                        .build(),
+                PostListResBody.builder()
+                        .postId(2L)
+                        .title("아이패드 빌려드려요")
+                        .thumbnailImageUrl("https://example.com/thumb2.jpg")
+                        .categoryId(3L)
+                        .regionIds(List.of(3L))
+                        .receiveMethod(ReceiveMethod.DELIVERY)
+                        .returnMethod(ReturnMethod.DELIVERY)
+                        .fee(3000)
+                        .deposit(5000)
+                        .authorNickname("jjuchan")
+                        .isFavorite(true)
+                        .isBanned(false)
+                        .build()
+        );
+
+        BDDMockito.given(postService.getMyPosts(anyLong()))
+                .willReturn(mockMyPosts);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/posts/my")
+                        .with(SecurityMockMvcRequestPostProcessors.user(mockUser))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("맥북 대여합니다."))
+                .andExpect(jsonPath("$[1].title").value("아이패드 빌려드려요"))
+                .andExpect(jsonPath("$[0].authorNickname").value("jjuchan"))
+                .andExpect(jsonPath("$[0].receiveMethod").value("DELIVERY"));
+    }
+
 }
 
