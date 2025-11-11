@@ -74,6 +74,7 @@ public class ReservationController {
     @Transactional(readOnly = true)
     @GetMapping("/{reservationId}")
     public RsData<ReservationDto> getReservationDetail(@PathVariable Long reservationId) {
+        // TODO: logs 정보 가져오기 (service 에서 ReservationDto를 만들어 오는 방식 고려)
         Reservation reservation = reservationService.getById(reservationId);
         return RsData.success("%d번 예약 상세 정보 조회".formatted(reservationId), new ReservationDto(reservation));
     }
