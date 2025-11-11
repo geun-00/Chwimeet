@@ -27,16 +27,14 @@ class ReportServiceTest extends IntegrationTestSupport {
 
     @BeforeEach
     void setUp() {
-        reporter = new Member();
-        em.persist(reporter);
+        reporter = createAndPersistMember("test-0@email.com", "01011223344", "myname-0");
     }
 
     @Test
     @DisplayName("Type과 TargetId 검증이 통과되면 정상적으로 신고가 등록된다.")
     void postReport_success() {
         //given
-        Member target = new Member();
-        em.persist(target);
+        Member target = createAndPersistMember("test-1@email.com", "01022334455", "myname-1");
 
         ReportReqBody reportReqBody = new ReportReqBody(ReportType.USER, target.getId(), "홍보 목적 게시글 신고");
         Long reporterId = reporter.getId();
@@ -72,8 +70,7 @@ class ReportServiceTest extends IntegrationTestSupport {
     @DisplayName("신고자가 존재하지 않으면 예외가 발생한다.")
     void postReport_memberNotfoundError() {
         //given
-        Member target = new Member();
-        em.persist(target);
+        Member target = createAndPersistMember("test-2@email.com", "01033445566", "myname-2");
 
         ReportReqBody reportReqBody = new ReportReqBody(ReportType.USER, target.getId(), "홍보 목적 게시글 신고");
 
@@ -81,6 +78,21 @@ class ReportServiceTest extends IntegrationTestSupport {
         //then
         assertThatThrownBy(() -> reportService.postReport(reportReqBody, 999L))
                 .isInstanceOf(ServiceException.class);
+    }
+
+    private Member createAndPersistMember(String email, String phoneNumber, String nickname) {
+        Member member = Member.builder()
+                              .email(email)
+                              .password("5ZspO3R")
+                              .name("Nikolay Mou")
+                              .phoneNumber(phoneNumber)
+                              .address1("173.137.115.206")
+                              .address2("88.181.176.116")
+                              .nickname(nickname)
+                              .isBanned(false)
+                              .build();
+        em.persist(member);
+        return member;
     }
 
     private void clearContext() {
