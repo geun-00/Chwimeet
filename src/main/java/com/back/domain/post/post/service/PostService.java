@@ -3,6 +3,7 @@ package com.back.domain.post.post.service;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.domain.post.post.dto.PostCreateReqBody;
+import com.back.domain.post.post.dto.PostListResBody;
 import com.back.domain.post.post.entity.Post;
 import com.back.domain.post.post.entity.PostImage;
 import com.back.domain.post.post.entity.PostOption;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -66,5 +68,36 @@ public class PostService {
         postRepository.save(post);
 
         return RsData.success("게시글이 등록되었습니다.");
+    }
+
+    public RsData<List<PostListResBody>> getPostList() {
+        List<Post> posts = postRepository.findAll();
+
+        List<PostListResBody> postlist = posts.stream()
+                .map(post -> PostListResBody.builder()
+                        .postId(post.getId())
+                        .title(post.getTitle())
+                        .thumbnailImageUrl(
+                                post.getImages().stream()
+                                        .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                                        .findFirst()
+                                        .map(img -> img.getImageUrl())
+                                        .orElse(null)
+                        )
+                        .categoryId(null) // 추후 카테고리 연동 필요
+                        .regionIds(List.of()) // 추후 지역 연동 필요
+                        .receiveMethod(post.getReceiveMethod())
+                        .returnMethod(post.getReturnMethod())
+                        .createdAt(post.getCreatedAt())
+                        .authorNickname(post.getAuthor().getNickname())
+                        .fee(post.getFee())
+                        .deposit(post.getDeposit())
+                        .isFavorite(false) // 추후 즐겨찾기 구현
+                        .isBanned(post.getIsBanned())
+                        .build()
+                )
+                .collect(Collectors.toList());
+
+        return RsData.success("게시글 목록 조회 성공", postlist);
     }
 }

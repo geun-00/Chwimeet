@@ -119,4 +119,4 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.data[0].title").value("맥북 대여합니다."));
     }
 }
-}
+
