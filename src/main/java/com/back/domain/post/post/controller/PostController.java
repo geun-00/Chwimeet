@@ -35,8 +35,8 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<RsData<List<PostListResBody>>> getPostList() {
-        RsData<List<PostListResBody>> body = postService.getPostList();
-        return ResponseEntity.status(HttpStatus.OK).body(body);
+    public ResponseEntity<List<PostListResBody>> getPostList() {
+        List<PostListResBody> body = postService.getPostList();
+        return ResponseEntity.ok(body);
     }
 }

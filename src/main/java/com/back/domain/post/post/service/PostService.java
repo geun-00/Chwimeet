@@ -70,10 +70,10 @@ public class PostService {
         return RsData.success("게시글이 등록되었습니다.");
     }
 
-    public RsData<List<PostListResBody>> getPostList() {
+    public List<PostListResBody> getPostList() {
         List<Post> posts = postRepository.findAll();
 
-        List<PostListResBody> postlist = posts.stream()
+        return posts.stream()
                 .map(post -> PostListResBody.builder()
                         .postId(post.getId())
                         .title(post.getTitle())
@@ -98,6 +98,5 @@ public class PostService {
                 )
                 .collect(Collectors.toList());
 
-        return RsData.success("게시글 목록 조회 성공", postlist);
     }
 }

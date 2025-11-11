@@ -110,15 +110,13 @@ class PostControllerTest {
         );
 
         BDDMockito.given(postService.getPostList())
-                .willReturn(RsData.<List<PostListResBody>>success("게시글 목록 조회 성공", mockList));
+                .willReturn(mockList);
 
         // when & then
         mockMvc.perform(get("/api/v1/posts")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("게시글 목록 조회 성공"))
-                .andExpect(jsonPath("$.data[0].title").value("맥북 대여합니다."));
+                .andExpect(jsonPath("$[0].title").value("맥북 대여합니다."));
     }
 }
 
