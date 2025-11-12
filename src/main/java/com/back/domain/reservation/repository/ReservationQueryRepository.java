@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.back.domain.reservation.reservation.entity.QReservation.reservation;
+import static com.back.domain.reservation.entity.QReservation.reservation;
 
 
 @Repository

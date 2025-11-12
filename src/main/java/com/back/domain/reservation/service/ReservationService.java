@@ -9,7 +9,6 @@ import com.back.domain.post.post.service.PostService;
 import com.back.domain.reservation.common.ReservationDeliveryMethod;
 import com.back.domain.reservation.common.ReservationStatus;
 import com.back.domain.reservation.dto.*;
-import com.back.domain.reservation.reservation.dto.*;
 import com.back.domain.reservation.entity.Reservation;
 import com.back.domain.reservation.entity.ReservationLog;
 import com.back.domain.reservation.entity.ReservationOption;

@@ -4,7 +4,6 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.reservation.common.ReservationStatus;
 import com.back.domain.reservation.dto.*;
-import com.back.domain.reservation.reservation.dto.*;
 import com.back.domain.reservation.service.ReservationService;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
