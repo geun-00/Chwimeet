@@ -1,5 +1,7 @@
 package com.back.domain.chat.chat.controller;
 
+import com.back.domain.category.category.entity.Category;
+import com.back.domain.category.category.repository.CategoryRepository;
 import com.back.domain.chat.chat.dto.CreateChatRoomReqBody;
 import com.back.domain.chat.chat.repository.ChatRoomRepository;
 import com.back.domain.chat.chat.service.ChatService;
@@ -52,6 +54,9 @@ class ChatControllerTest {
     private ChatRoomRepository chatRoomRepository;
 
     @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
     private ChatService chatService;
 
     private Post post;
@@ -90,6 +95,11 @@ class ChatControllerTest {
                 .build()
         );
 
+        Category category = categoryRepository.save(Category.builder()
+                .name("노트북")
+                .parent(null)
+                .build());
+
         post = postRepository.save(Post.builder()
                 .title("테스트 게시글 1")
                 .content("테스트용 게시글 내용입니다.")
@@ -98,6 +108,7 @@ class ChatControllerTest {
                 .deposit(10000)
                 .fee(5000)
                 .author(member2)
+                .category(category)
                 .build()
         );
     }
