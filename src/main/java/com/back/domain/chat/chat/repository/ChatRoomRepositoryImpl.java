@@ -2,7 +2,7 @@ package com.back.domain.chat.chat.repository;
 
 import com.back.domain.chat.chat.dto.ChatRoomDto;
 import com.back.domain.chat.chat.dto.OtherMemberDto;
-import com.back.domain.chat.chat.dto.PostDto;
+import com.back.domain.chat.chat.dto.ChatPostDto;
 import com.back.domain.chat.chat.entity.QChatMember;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -65,7 +65,7 @@ public class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
                 .select(Projections.constructor(ChatRoomDto.class,
                         chatRoom.id,
                         chatRoom.createdAt,
-                        Projections.constructor(PostDto.class,
+                        Projections.constructor(ChatPostDto.class,
                                 post.title
                         ),
                         Projections.constructor(OtherMemberDto.class,

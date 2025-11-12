@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 public record ChatRoomDto(
         Long id,
         LocalDateTime createdAt,
-        PostDto post,
+        ChatPostDto post,
         OtherMemberDto otherMember
 ) { }
 
