@@ -1,10 +1,10 @@
-package com.back.domain.reservation.reservation.entity;
+package com.back.domain.reservation.entity;
 
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.post.post.entity.Post;
 import com.back.domain.post.post.entity.PostOption;
-import com.back.domain.reservation.reservation.common.ReservationDeliveryMethod;
-import com.back.domain.reservation.reservation.common.ReservationStatus;
+import com.back.domain.reservation.common.ReservationDeliveryMethod;
+import com.back.domain.reservation.common.ReservationStatus;
 import com.back.domain.review.review.entity.Review;
 import com.back.global.exception.ServiceException;
 import com.back.global.jpa.entity.BaseEntity;
@@ -20,9 +20,8 @@ import java.util.Set;
 @Entity
 @Getter
 @ToString
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
 public class Reservation extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -54,7 +53,6 @@ public class Reservation extends BaseEntity {
     @JoinColumn(name = "author_id")
     private Member author;
 
-    @Builder.Default
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReservationOption> reservationOptions = new ArrayList<>();
 
@@ -64,6 +62,51 @@ public class Reservation extends BaseEntity {
     public void addAllOptions(List<ReservationOption> reservationOptions) {
         this.reservationOptions.addAll(reservationOptions);
     }
+
+    public Reservation(
+            ReservationStatus status,
+            ReservationDeliveryMethod receiveMethod,
+            String receiveAddress1,
+            String receiveAddress2,
+            ReservationDeliveryMethod returnMethod,
+            LocalDate reservationStartAt,
+            LocalDate reservationEndAt,
+            Member author,
+            Post post
+    ) {
+        this.status = status;
+        this.receiveMethod = receiveMethod;
+        this.receiveAddress1 = receiveAddress1;
+        this.receiveAddress2 = receiveAddress2;
+        this.returnMethod = returnMethod;
+        this.reservationStartAt = reservationStartAt;
+        this.reservationEndAt = reservationEndAt;
+        this.author = author;
+        this.post = post;
+    }
+
+//    public static Reservation createPendingReservation(
+//            ReservationDeliveryMethod receiveMethod,
+//            String receiveAddress1,
+//            String receiveAddress2,
+//            ReservationDeliveryMethod returnMethod,
+//            LocalDate reservationStartAt,
+//            LocalDate reservationEndAt,
+//            Member author,
+//            Post post
+//    ) {
+//        return new Reservation(
+//                ReservationStatus.PENDING_APPROVAL,
+//                receiveMethod,
+//                receiveAddress1,
+//                receiveAddress2,
+//                returnMethod,
+//                reservationStartAt,
+//                reservationEndAt,
+//                author,
+//                post
+//        );
+//    }
 
     // ===== 상태 전환 메서드 =====
 
@@ -300,12 +343,7 @@ public class Reservation extends BaseEntity {
         this.reservationEndAt = reservationEndAt;
         this.reservationOptions.clear();
         selectedOptions.forEach(option ->
-                this.reservationOptions.add(
-                        ReservationOption.builder()
-                                .postOption(option)
-                                .reservation(this)
-                                .build()
-                )
+                this.reservationOptions.add(new ReservationOption(this, option))
         );
     }
 }
