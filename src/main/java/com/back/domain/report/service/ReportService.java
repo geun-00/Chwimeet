@@ -30,18 +30,16 @@ public class ReportService {
     private final ReportQueryRepository reportQueryRepository;
 
     @Transactional
-    public ReportResBody postReport(ReportReqBody reportReqBody, long reporterId) {
-        reportValidator.validateTargetId(reportReqBody.reportType(), reportReqBody.targetId());
+    public ReportResBody postReport(ReportReqBody reqBody, long reporterId) {
+        reportValidator.validateTargetId(reqBody.reportType(), reqBody.targetId());
 
         Member reporter = memberRepository.findById(reporterId)
                                           .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
 
-        Report savedReport = reportRepository.save(Report.builder()
-                                                         .comment(reportReqBody.comment())
-                                                         .targetId(reportReqBody.targetId())
-                                                         .reportType(reportReqBody.reportType())
-                                                         .member(reporter)
-                                                         .build());
+        Report savedReport = reportRepository.save(Report.create(
+                reqBody.targetId(), reqBody.comment(), reporter, reqBody.reportType()
+        ));
+
         return ReportResBody.from(savedReport);
     }
 

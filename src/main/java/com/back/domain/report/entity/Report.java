@@ -11,15 +11,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Report extends BaseEntity {
 
     Long targetId;
@@ -31,4 +29,20 @@ public class Report extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     ReportType reportType;
+
+    public static Report create(Long targetId, String comment, Member member, ReportType reportType) {
+        return new Report(targetId, comment, member, reportType);
+    }
+
+    public static Report createPostType(Long targetId, String comment, Member member) {
+        return new Report(targetId, comment, member, ReportType.POST);
+    }
+
+    public static Report createUserType(Long targetId, String comment, Member member) {
+        return new Report(targetId, comment, member, ReportType.USER);
+    }
+
+    public static Report createReviewType(Long targetId, String comment, Member member) {
+        return new Report(targetId, comment, member, ReportType.REVIEW);
+    }
 }

@@ -2,11 +2,9 @@ package com.back.domain.report.dto;
 
 import com.back.domain.report.common.ReportType;
 import com.back.domain.report.entity.Report;
-import lombok.Builder;
 
 import java.time.LocalDateTime;
 
-@Builder
 public record ReportResBody(
         Long reportId,
         ReportType reportType,
@@ -16,13 +14,13 @@ public record ReportResBody(
         LocalDateTime createdAt
 ) {
     public static ReportResBody from(Report report) {
-        return ReportResBody.builder()
-                            .reportId(report.getId())
-                            .reportType(report.getReportType())
-                            .targetId(report.getTargetId())
-                            .comment(report.getComment())
-                            .authorId(report.getMember().getId())
-                            .createdAt(report.getCreatedAt())
-                            .build();
+        return new ReportResBody(
+                report.getId(),
+                report.getReportType(),
+                report.getTargetId(),
+                report.getComment(),
+                report.getMember().getId(),
+                report.getCreatedAt()
+        );
     }
 }
