@@ -10,9 +10,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class Region extends BaseEntity {
 
     private String name;
@@ -23,6 +21,15 @@ public class Region extends BaseEntity {
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Region> children = new ArrayList<>();
+
+    private Region(String name, Region parent) {
+        this.name = name;
+        this.parent = parent;
+    }
+
+    public static Region create(String name, Region parent) {
+        return new Region(name, parent);
+    }
 
     public void modify(RegionUpdateReqBody regionUpdateReqBody) {
         this.name = regionUpdateReqBody.name();

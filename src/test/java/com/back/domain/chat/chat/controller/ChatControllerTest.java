@@ -132,10 +132,9 @@ class ChatControllerTest {
         );
 
         // 게시글 생성
-        Category category = categoryRepository.save(Category.builder()
-                .name("노트북")
-                .parent(null)
-                .build());
+        Category category = categoryRepository.save(
+                Category.create("노트북", null)
+        );
 
         post1 = postRepository.save(Post.builder()
                 .title("캠핑 텐트 대여")

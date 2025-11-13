@@ -42,19 +42,14 @@ public class RegionService {
             throw new ServiceException(HttpStatus.BAD_REQUEST, "지역은 Depth 2까지만 생성할 수 있습니다.");
         }
 
-        Region region = Region.builder()
-                .parent(parentRegion)
-                .name(regionName)
-                .build();
+        Region region = Region.create(regionName, parentRegion);
 
         Region saved = regionRepository.save(region);
         return RegionResBody.of(saved);
     }
 
     private RegionResBody createRegionWithoutParent(String regionName) {
-        Region region = Region.builder()
-                .name(regionName)
-                .build();
+        Region region = Region.create(regionName, null);
 
         Region saved = regionRepository.save(region);
         return RegionResBody.of(saved);

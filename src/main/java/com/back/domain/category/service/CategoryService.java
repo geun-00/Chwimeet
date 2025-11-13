@@ -42,19 +42,14 @@ public class CategoryService {
             throw new ServiceException(HttpStatus.BAD_REQUEST, "카테고리는 Depth 2까지만 생성할 수 있습니다.");
         }
 
-        Category category = Category.builder()
-                .parent(parentCategory)
-                .name(categoryName)
-                .build();
+        Category category = Category.create(categoryName, parentCategory);
 
         Category saved = categoryRepository.save(category);
         return CategoryResBody.of(saved);
     }
 
     private CategoryResBody createCategoryWithoutParent(String categoryName) {
-        Category category = Category.builder()
-                .name(categoryName)
-                .build();
+        Category category = Category.create(categoryName, null);
 
         Category saved = categoryRepository.save(category);
         return CategoryResBody.of(saved);

@@ -10,9 +10,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class Category extends BaseEntity {
 
     private String name;
@@ -23,6 +21,15 @@ public class Category extends BaseEntity {
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Category> children = new ArrayList<>();
+
+    private Category(String name, Category parent) {
+        this.name = name;
+        this.parent = parent;
+    }
+
+    public static Category create(String name, Category parent) {
+        return new Category(name, parent);
+    }
 
     public void modify(CategoryUpdateReqBody categoryUpdateReqBody) {
         this.name = categoryUpdateReqBody.name();
