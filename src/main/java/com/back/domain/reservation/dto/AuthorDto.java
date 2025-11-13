@@ -3,7 +3,7 @@ package com.back.domain.reservation.dto;
 import com.back.domain.member.entity.Member;
 
 public record AuthorDto(
-        Long authorId,
+        Long id,
         String nickname,
         String profileImgUrl
 ) {
