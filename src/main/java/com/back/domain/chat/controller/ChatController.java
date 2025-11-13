@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/chats")
 @RequiredArgsConstructor
-public class ChatController {
+public class ChatController implements ChatApi{
     private final ChatService chatService;
 
     @PostMapping

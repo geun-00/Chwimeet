@@ -37,6 +37,21 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
+            String path = request.getRequestURI();
+
+            // Public Endpoint면 바로 통과
+            List<String> publicEndpoints = List.of(
+                    "/swagger-ui", "/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/",
+                    "/h2-console", "/h2-console/"
+            );
+
+            for (String endpoint : publicEndpoints) {
+                if (path.startsWith(endpoint)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+            }
+
             // Preflight(OPTIONS)은 그대로 통과
             if (HttpMethod.OPTIONS.matches(request.getMethod())) {
                 filterChain.doFilter(request, response);
