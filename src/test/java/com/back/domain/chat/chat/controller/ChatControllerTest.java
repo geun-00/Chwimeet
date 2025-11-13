@@ -7,10 +7,10 @@ import com.back.domain.chat.chat.repository.ChatRoomRepository;
 import com.back.domain.chat.chat.service.ChatService;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
-import com.back.domain.post.post.common.ReceiveMethod;
-import com.back.domain.post.post.common.ReturnMethod;
-import com.back.domain.post.post.entity.Post;
-import com.back.domain.post.post.repository.PostRepository;
+import com.back.domain.post.common.ReceiveMethod;
+import com.back.domain.post.common.ReturnMethod;
+import com.back.domain.post.entity.Post;
+import com.back.domain.post.repository.PostRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -88,41 +88,44 @@ class ChatControllerTest {
                 Category.create("노트북", null)
         );
 
-        post1 = postRepository.save(Post.builder()
-                .title("캠핑 텐트 대여")
-                .content("4인용 텐트입니다.")
-                .receiveMethod(ReceiveMethod.DELIVERY)
-                .returnMethod(ReturnMethod.DELIVERY)
-                .deposit(10000)
-                .fee(5000)
-                .author(member2)
-                .category(category)
-                .build()
-        );
+        post1 = postRepository.save(Post.of(
+                "캠핑 텐트 대여",
+                "4인용 텐트입니다.",
+                ReceiveMethod.DELIVERY,
+                ReturnMethod.DELIVERY,
+                null,
+                null,
+                10000,
+                5000,
+                member2,
+                category
+        ));
 
-        post2 = postRepository.save(Post.builder()
-                .title("노트북 대여합니다")
-                .content("맥북 프로입니다.")
-                .receiveMethod(ReceiveMethod.DIRECT)
-                .returnMethod(ReturnMethod.DIRECT)
-                .deposit(50000)
-                .fee(20000)
-                .author(member3)
-                .category(category)
-                .build()
-        );
+        post2 = postRepository.save(Post.of(
+                "노트북 대여합니다",
+                "맥북 프로입니다.",
+                ReceiveMethod.DIRECT,
+                ReturnMethod.DIRECT,
+                null,
+                null,
+                50000,
+                20000,
+                member3,
+                category
+        ));
 
-        post3 = postRepository.save(Post.builder()
-                .title("카메라 렌탈")
-                .content("소니 A7III입니다.")
-                .receiveMethod(ReceiveMethod.ANY)
-                .returnMethod(ReturnMethod.ANY)
-                .deposit(30000)
-                .fee(15000)
-                .author(member4)
-                .category(category)
-                .build()
-        );
+        post3 = postRepository.save(Post.of(
+                "카메라 렌탈",
+                "소니 A7III입니다.",
+                ReceiveMethod.ANY,
+                ReturnMethod.ANY,
+                null,
+                null,
+                30000,
+                15000,
+                member4,
+                category
+        ));
 
         // member1이 여러 채팅방 생성
         chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2

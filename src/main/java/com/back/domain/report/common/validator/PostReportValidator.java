@@ -1,6 +1,7 @@
 package com.back.domain.report.common.validator;
 
-import com.back.domain.post.post.repository.PostRepository;
+
+import com.back.domain.post.repository.PostRepository;
 import com.back.domain.report.common.ReportType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
