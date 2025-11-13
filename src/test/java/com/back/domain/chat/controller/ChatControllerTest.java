@@ -212,8 +212,9 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("채팅방이 생성되었습니다."))
-                .andExpect(jsonPath("$.chatRoomId").exists());
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("채팅방이 생성되었습니다."))
+                .andExpect(jsonPath("$.data.chatRoomId").exists());
     }
 
     @Test
@@ -233,8 +234,9 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("이미 존재하는 채팅방입니다."))
-                .andExpect(jsonPath("$.chatRoomId").exists());
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("이미 존재하는 채팅방입니다."))
+                .andExpect(jsonPath("$.data.chatRoomId").exists());
     }
 
     @Test
@@ -289,12 +291,14 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(3))  // 3개 채팅방
-                .andExpect(jsonPath("$.page.page").value(0))
-                .andExpect(jsonPath("$.page.size").value(10))
-                .andExpect(jsonPath("$.page.totalElements").value(3))
-                .andExpect(jsonPath("$.page.totalPages").value(1));
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("내 채팅방 목록"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(3))
+                .andExpect(jsonPath("$.data.page.page").value(0))
+                .andExpect(jsonPath("$.data.page.size").value(10))
+                .andExpect(jsonPath("$.data.page.totalElements").value(3))
+                .andExpect(jsonPath("$.data.page.totalPages").value(1));
     }
 
     @Test
@@ -311,11 +315,13 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].post.title").value("캠핑 텐트 대여"))
-                .andExpect(jsonPath("$.content[0].otherMember.nickname").value("kim"))
-                .andExpect(jsonPath("$.page.totalElements").value(1));
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("내 채팅방 목록"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].post.title").value("캠핑 텐트 대여"))
+                .andExpect(jsonPath("$.data.content[0].otherMember.nickname").value("kim"))
+                .andExpect(jsonPath("$.data.page.totalElements").value(1));
     }
 
     @Test
@@ -332,9 +338,11 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(2))  // "캠핑 텐트 대여", "노트북 대여합니다"
-                .andExpect(jsonPath("$.page.totalElements").value(2));
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("내 채팅방 목록"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.page.totalElements").value(2));
     }
 
     @Test
@@ -351,18 +359,20 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].otherMember.nickname").value("kim"))
-                .andExpect(jsonPath("$.content[0].post.title").value("캠핑 텐트 대여"))
-                .andExpect(jsonPath("$.page.totalElements").value(1));
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("내 채팅방 목록"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].otherMember.nickname").value("kim"))
+                .andExpect(jsonPath("$.data.content[0].post.title").value("캠핑 텐트 대여"))
+                .andExpect(jsonPath("$.data.page.totalElements").value(1));
     }
 
     @Test
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 페이징 테스트")
     void test9_getMyChatRooms_pagination() throws Exception {
-        // when - 첫 페이지 (size=2)
+        // 첫 페이지 (size=2)
         ResultActions resultActions = mvc.perform(get("/api/v1/chats")
                         .param("page", "0")
                         .param("size", "2"))
@@ -371,16 +381,16 @@ class ChatControllerTest {
         // then
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(2))
-                .andExpect(jsonPath("$.page.page").value(0))
-                .andExpect(jsonPath("$.page.size").value(2))
-                .andExpect(jsonPath("$.page.totalElements").value(3))
-                .andExpect(jsonPath("$.page.totalPages").value(2))
-                .andExpect(jsonPath("$.page.first").value(true))
-                .andExpect(jsonPath("$.page.last").value(false))
-                .andExpect(jsonPath("$.page.hasNext").value(true));
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.page.page").value(0))
+                .andExpect(jsonPath("$.data.page.size").value(2))
+                .andExpect(jsonPath("$.data.page.totalElements").value(3))
+                .andExpect(jsonPath("$.data.page.totalPages").value(2))
+                .andExpect(jsonPath("$.data.page.first").value(true))
+                .andExpect(jsonPath("$.data.page.last").value(false))
+                .andExpect(jsonPath("$.data.page.hasNext").value(true));
 
-        // when - 두 번째 페이지
+        // 두 번째 페이지
         ResultActions resultActions2 = mvc.perform(get("/api/v1/chats")
                         .param("page", "1")
                         .param("size", "2"))
@@ -389,11 +399,11 @@ class ChatControllerTest {
         // then
         resultActions2
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.page.page").value(1))
-                .andExpect(jsonPath("$.page.totalElements").value(3))
-                .andExpect(jsonPath("$.page.first").value(false))
-                .andExpect(jsonPath("$.page.last").value(true))
-                .andExpect(jsonPath("$.page.hasNext").value(false));
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.page.page").value(1))
+                .andExpect(jsonPath("$.data.page.totalElements").value(3))
+                .andExpect(jsonPath("$.data.page.first").value(false))
+                .andExpect(jsonPath("$.data.page.last").value(true))
+                .andExpect(jsonPath("$.data.page.hasNext").value(false));
     }
 }
