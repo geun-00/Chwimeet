@@ -1,17 +1,17 @@
 package com.back.domain.chat.controller;
 
-import com.back.domain.category.category.entity.Category;
-import com.back.domain.category.category.repository.CategoryRepository;
+import com.back.domain.category.entity.Category;
+import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.chat.dto.CreateChatRoomReqBody;
 import com.back.domain.chat.repository.ChatRoomRepository;
 import com.back.domain.chat.service.ChatService;
 import com.back.domain.member.common.MemberRole;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
-import com.back.domain.post.post.common.ReceiveMethod;
-import com.back.domain.post.post.common.ReturnMethod;
-import com.back.domain.post.post.entity.Post;
-import com.back.domain.post.post.repository.PostRepository;
+import com.back.domain.post.common.ReceiveMethod;
+import com.back.domain.post.common.ReturnMethod;
+import com.back.domain.post.entity.Post;
+import com.back.domain.post.repository.PostRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -130,11 +130,8 @@ class ChatControllerTest {
         ));
 
         // 게시글 생성
-        Category category = categoryRepository.save(new Category(
-                "노트북",
-                null,
-                null
-        ));
+        Category category = Category.create("노트북", null);
+        categoryRepository.save(category);
 
         post1 = postRepository.save(new Post(
                 "캠핑 텐트 대여",

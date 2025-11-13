@@ -20,7 +20,7 @@ import java.util.function.Function;
 import static com.back.domain.chat.entity.QChatMember.chatMember;
 import static com.back.domain.chat.entity.QChatRoom.chatRoom;
 import static com.back.domain.member.entity.QMember.member;
-import static com.back.domain.post.post.entity.QPost.post;
+import static com.back.domain.post.entity.QPost.post;
 
 @Repository
 public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
