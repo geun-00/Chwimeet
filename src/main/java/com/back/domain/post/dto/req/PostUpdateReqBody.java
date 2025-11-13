@@ -9,7 +9,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-
 public record PostUpdateReqBody(
 
         @NotBlank(message = "제목을 입력하세요.")

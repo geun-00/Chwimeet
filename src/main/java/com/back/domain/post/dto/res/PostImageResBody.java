@@ -1,10 +1,15 @@
 package com.back.domain.post.dto.res;
 
-import lombok.Builder;
+import com.back.domain.post.entity.PostImage;
 
-@Builder
 public record PostImageResBody(
         String file,
         Boolean isPrimary
 ) {
+    public static PostImageResBody of(PostImage image) {
+        return new PostImageResBody(
+                image.getImageUrl(),
+                image.getIsPrimary()
+        );
+    }
 }

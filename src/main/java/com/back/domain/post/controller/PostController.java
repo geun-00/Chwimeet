@@ -1,6 +1,7 @@
 package com.back.domain.post.controller;
 
 import com.back.domain.post.dto.req.PostCreateReqBody;
+import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.service.PostService;
@@ -92,7 +93,7 @@ public class PostController {
     @PutMapping("/{postId}")
     public ResponseEntity<String> updatePost(
             @PathVariable Long postId,
-            @Valid @RequestBody PostCreateReqBody reqBody,
+            @Valid @RequestBody PostUpdateReqBody reqBody,
             @AuthenticationPrincipal SecurityUser user
     ) {
         postService.updatePost(postId, reqBody, user.getId());

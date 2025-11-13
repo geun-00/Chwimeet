@@ -1,10 +1,17 @@
 package com.back.domain.post.dto.res;
 
-import lombok.Builder;
+import com.back.domain.post.entity.PostOption;
 
-@Builder
 public record PostOptionResBody(
         String name,
         Integer deposit,
         Integer fee
-) {}
+) {
+    public static PostOptionResBody of(PostOption option) {
+        return new PostOptionResBody(
+                option.getName(),
+                option.getDeposit(),
+                option.getFee()
+        );
+    }
+}

@@ -5,7 +5,9 @@ import com.back.domain.category.category.repository.CategoryRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
-import com.back.domain.post.dto.res.*;
+import com.back.domain.post.dto.req.PostUpdateReqBody;
+import com.back.domain.post.dto.res.PostDetailResBody;
+import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.entity.*;
 import com.back.domain.post.repository.PostFavoriteRepository;
 import com.back.domain.post.repository.PostOptionRepository;
@@ -22,7 +24,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -110,52 +111,22 @@ public class PostService {
                         categoryId != null ||
                         (regionIds != null && !regionIds.isEmpty());
 
-        Page<Post> postPage;
-
         if (regionIds != null && regionIds.isEmpty()) {
             regionIds = null;
         }
 
-        if (hasFilter) {
-            postPage = postRepository.findFilteredPosts(keyword, categoryId, regionIds, pageable);
-        } else {
-            postPage = postRepository.findAll(pageable);
-        }
+        Page<Post> postPage = hasFilter
+                ? postRepository.findFilteredPosts(keyword, categoryId, regionIds, pageable)
+                : postRepository.findAll(pageable);
 
         Page<PostListResBody> mappedPage = postPage.map(post -> {
-            boolean isFavorite = false;
 
-            if (memberId != null && !post.getAuthor().getId().equals(memberId)) {
-                isFavorite = postFavoriteRepository
-                        .findByMemberIdAndPostId(memberId, post.getId())
-                        .isPresent();
-            }
+            boolean isFavorite =
+                    memberId != null &&
+                            !post.getAuthor().getId().equals(memberId) &&
+                            postFavoriteRepository.findByMemberIdAndPostId(memberId, post.getId()).isPresent();
 
-            return PostListResBody.builder()
-                    .postId(post.getId())
-                    .title(post.getTitle())
-                    .thumbnailImageUrl(
-                            post.getImages().stream()
-                                    .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
-                                    .findFirst()
-                                    .map(PostImage::getImageUrl)
-                                    .orElse(null)
-                    )
-                    .categoryId(post.getCategory().getId())
-                    .regionIds(
-                            post.getPostRegions().stream()
-                                    .map(postRegion -> postRegion.getRegion().getId())
-                                    .collect(Collectors.toList())
-                    )
-                    .receiveMethod(post.getReceiveMethod())
-                    .returnMethod(post.getReturnMethod())
-                    .createdAt(post.getCreatedAt())
-                    .authorNickname(post.getAuthor().getNickname())
-                    .fee(post.getFee())
-                    .deposit(post.getDeposit())
-                    .isFavorite(isFavorite)
-                    .isBanned(post.getIsBanned())
-                    .build();
+            return PostListResBody.of(post, isFavorite);
         });
 
         return PageUt.of(mappedPage);
@@ -170,70 +141,13 @@ public class PostService {
 
         boolean isFavorite = postFavoriteRepository.findByMemberIdAndPostId(memberId, postId).isPresent();
 
-        return PostDetailResBody.builder()
-                .postId(post.getId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .categoryId(post.getCategory().getId())
-                .regionIds(post.getPostRegions().stream()
-                        .map(postRegion -> postRegion.getRegion().getId())
-                        .collect(Collectors.toList()))
-                .receiveMethod(post.getReceiveMethod())
-                .returnMethod(post.getReturnMethod())
-                .returnAddress1(post.getReturnAddress1())
-                .returnAddress2(post.getReturnAddress2())
-                .deposit(post.getDeposit())
-                .fee(post.getFee())
-                .options(post.getOptions().stream()
-                        .map(option -> PostOptionResBody.builder()
-                                .name(option.getName())
-                                .deposit(option.getDeposit())
-                                .fee(option.getFee())
-                                .build())
-                        .collect(Collectors.toList()))
-                .images(post.getImages().stream()
-                        .map(image -> PostImageResBody.builder()
-                                .file(image.getImageUrl())
-                                .isPrimary(image.getIsPrimary())
-                                .build()
-                        )
-                        .collect(Collectors.toList())
-                )
-                .createdAt(post.getCreatedAt())
-                .modifiedAt(post.getModifiedAt())
-                .author(PostAuthorDto.from(post.getAuthor()))
-                .isFavorite(isFavorite)
-                .isBanned(post.getIsBanned())
-                .build();
+        return PostDetailResBody.of(post, isFavorite);
     }
     public PagePayload<PostListResBody> getMyPosts(Long memberId, Pageable pageable) {
-        Page<PostListResBody> postPage = postRepository.findAllByAuthorId(memberId, pageable)
-                .map(post -> PostListResBody.builder()
-                        .postId(post.getId())
-                        .title(post.getTitle())
-                        .thumbnailImageUrl(
-                                post.getImages().stream()
-                                        .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
-                                        .findFirst()
-                                        .map(img -> img.getImageUrl())
-                                        .orElse(null)
-                        )
-                        .categoryId(post.getCategory().getId())
-                        .regionIds(post.getPostRegions().stream()
-                                .map(postRegion -> postRegion.getRegion().getId())
-                                .collect(Collectors.toList()))
-                        .receiveMethod(post.getReceiveMethod())
-                        .returnMethod(post.getReturnMethod())
-                        .createdAt(post.getCreatedAt())
-                        .authorNickname(post.getAuthor().getNickname())
-                        .fee(post.getFee())
-                        .deposit(post.getDeposit())
-                        .isFavorite(false)
-                        .isBanned(post.getIsBanned())
-                        .build()
-                );
+        Page<PostListResBody> result = postRepository.findAllByAuthorId(memberId, pageable)
+                .map(p -> PostListResBody.of(p, false));
 
-        return PageUt.of(postPage);
+        return PageUt.of(result);
     }
 
     public Post getById(Long id) {
@@ -253,53 +167,29 @@ public class PostService {
         }
 
         return postFavoriteRepository.findByMemberIdAndPostId(memberId, postId)
-                .map(postFavorite -> {
-                    postFavoriteRepository.delete(postFavorite);
+                .map(fav -> {
+                    postFavoriteRepository.delete(fav);
                     return false;
                 })
                 .orElseGet(() -> {
-                    PostFavorite postFavorite = PostFavorite.builder()
-                            .member(member)
-                            .post(post)
-                            .build();
-                    postFavoriteRepository.save(postFavorite);
+                    postFavoriteRepository.save(new PostFavorite(post, member));
                     return true;
                 });
     }
 
     public PagePayload<PostListResBody> getFavoritePosts(long memberId, Pageable pageable) {
-        Page<PostFavorite> favoritePosts = postFavoriteRepository.findAllByMemberId(memberId, pageable);
 
-        Page<PostListResBody> mappedPage = favoritePosts.map(favorite -> {
-            Post post = favorite.getPost();
-            return PostListResBody.builder()
-                    .postId(post.getId())
-                    .title(post.getTitle())
-                    .thumbnailImageUrl(
-                            post.getImages().stream()
-                                    .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
-                                    .findFirst()
-                                    .map(img -> img.getImageUrl())
-                                    .orElse(null)
-                    )
-                    .categoryId(post.getCategory().getId())
-                    .regionIds(post.getPostRegions().stream()
-                            .map(postRegion -> postRegion.getRegion().getId())
-                            .collect(Collectors.toList()))
-                    .receiveMethod(post.getReceiveMethod())
-                    .returnMethod(post.getReturnMethod())
-                    .createdAt(post.getCreatedAt())
-                    .authorNickname(post.getAuthor().getNickname())
-                    .fee(post.getFee())
-                    .deposit(post.getDeposit())
-                    .isFavorite(true)
-                    .isBanned(post.getIsBanned())
-                    .build();
-        });
-        return PageUt.of(mappedPage);
+        Page<PostFavorite> favorites =
+                postFavoriteRepository.findAllByMemberId(memberId, pageable);
+
+        Page<PostListResBody> result = favorites
+                .map(f -> PostListResBody.of(f.getPost(), true));
+
+        return PageUt.of(result);
+
     }
 
-    public void updatePost(Long postId, PostCreateReqBody reqBody, long memberId) {
+    public void updatePost(Long postId, PostUpdateReqBody reqBody, long memberId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
 
