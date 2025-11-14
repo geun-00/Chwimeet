@@ -23,10 +23,10 @@ public enum ReservationStatus {
     CANCELLED("예약 취소", true);
 
     private final String description;
-    private final boolean isFinal;
+    private final boolean isReviewable;
 
-    ReservationStatus(String description, boolean isFinal) {
+    ReservationStatus(String description, boolean isReviewable) {
         this.description = description;
-        this.isFinal = isFinal;
+        this.isReviewable = isReviewable;
     }
 }
