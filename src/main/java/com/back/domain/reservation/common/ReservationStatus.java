@@ -12,15 +12,15 @@ public enum ReservationStatus {
     RENTING("대여 중", false),
     PENDING_RETURN("반납 대기", false),
     RETURNING("반납 중", false),
-    RETURN_COMPLETED("반납 완료", false),
-    INSPECTING_RETURN("반납 검수", false),
-    PENDING_REFUND("환급 예정", false),
+    RETURN_COMPLETED("반납 완료", true),
+    INSPECTING_RETURN("반납 검수", true),
+    PENDING_REFUND("환급 예정", true),
     REFUND_COMPLETED("환급 완료", true),
     LOST_OR_UNRETURNED("미반납/분실", false),
     CLAIMING("청구 진행", false),
     CLAIM_COMPLETED("청구 완료", true),
     REJECTED("승인 거절", false),
-    CANCELLED("예약 취소", true);
+    CANCELLED("예약 취소", false);
 
     private final String description;
     private final boolean isReviewable;
