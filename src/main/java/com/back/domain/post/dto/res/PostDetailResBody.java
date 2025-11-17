@@ -1,5 +1,7 @@
 package com.back.domain.post.dto.res;
 
+import com.back.domain.post.common.ReceiveMethod;
+import com.back.domain.post.common.ReturnMethod;
 import com.back.domain.post.entity.Post;
 
 import java.time.LocalDateTime;
@@ -13,6 +15,8 @@ public record PostDetailResBody(
         List<Long> regionIds,
         String returnAddress1,
         String returnAddress2,
+        ReceiveMethod receiveMethod,
+        ReturnMethod returnMethod,
         Integer deposit,
         Integer fee,
         List<PostOptionResBody> options,
@@ -45,6 +49,8 @@ public record PostDetailResBody(
                 regionIds,
                 post.getReturnAddress1(),
                 post.getReturnAddress2(),
+                post.getReceiveMethod(),
+                post.getReturnMethod(),
                 post.getDeposit(),
                 post.getFee(),
                 options,
