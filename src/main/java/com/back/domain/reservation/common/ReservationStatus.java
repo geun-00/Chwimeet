@@ -17,12 +17,12 @@ public enum ReservationStatus {
     RENTING("대여 중", false, ReservationStatusSubject.GUEST),
     PENDING_RETURN("반납 대기", false, ReservationStatusSubject.SYSTEM_OR_ANY),
     RETURNING("반납 중", false, ReservationStatusSubject.GUEST),
+    INSPECTING_RETURN("반납 검수", false, ReservationStatusSubject.HOST),
     RETURN_COMPLETED("반납 완료", true, ReservationStatusSubject.SYSTEM_OR_ANY),
-    INSPECTING_RETURN("반납 검수", true, ReservationStatusSubject.HOST),
     PENDING_REFUND("환급 예정", true, ReservationStatusSubject.HOST),
     REFUND_COMPLETED("환급 완료", true, ReservationStatusSubject.SYSTEM_OR_ANY),
-    LOST_OR_UNRETURNED("미반납/분실", false, ReservationStatusSubject.GUEST),
-    CLAIMING("청구 진행", false, ReservationStatusSubject.HOST),
+    LOST_OR_UNRETURNED("미반납/분실", false, ReservationStatusSubject.SYSTEM_OR_ANY),
+    CLAIMING("청구 진행", true, ReservationStatusSubject.HOST),
     CLAIM_COMPLETED("청구 완료", true, ReservationStatusSubject.SYSTEM_OR_ANY),
     REJECTED("승인 거절", false, ReservationStatusSubject.HOST),
     CANCELLED("예약 취소", false, ReservationStatusSubject.GUEST);
@@ -44,10 +44,10 @@ public enum ReservationStatus {
         transitions.put(SHIPPING, Set.of(INSPECTING_RENTAL));
         transitions.put(INSPECTING_RENTAL, Set.of(RENTING, PENDING_RETURN)); // 취소 → 반납 대기
         transitions.put(RENTING, Set.of(PENDING_RETURN, LOST_OR_UNRETURNED));
-        transitions.put(PENDING_RETURN, Set.of(RETURNING, RETURN_COMPLETED));
-        transitions.put(RETURNING, Set.of(RETURN_COMPLETED));
-        transitions.put(RETURN_COMPLETED, Set.of(INSPECTING_RETURN));
-        transitions.put(INSPECTING_RETURN, Set.of(PENDING_REFUND, CLAIMING));
+        transitions.put(PENDING_RETURN, Set.of(RETURNING, INSPECTING_RETURN));
+        transitions.put(RETURNING, Set.of(INSPECTING_RETURN));
+        transitions.put(INSPECTING_RETURN, Set.of(RETURN_COMPLETED));
+        transitions.put(RETURN_COMPLETED, Set.of(PENDING_REFUND, CLAIMING));
         transitions.put(PENDING_REFUND, Set.of(REFUND_COMPLETED));
         transitions.put(LOST_OR_UNRETURNED, Set.of(CLAIMING));
         transitions.put(CLAIMING, Set.of(CLAIM_COMPLETED));
