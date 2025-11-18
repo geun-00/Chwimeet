@@ -1,0 +1,179 @@
+name: be-cd
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/src/**"
+      - "backend/build.gradle.kts"
+      - "backend/Dockerfile"
+      - ".github/workflows/be-cd.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: be-cd-${{ github.ref }}
+  cancel-in-progress: false # 배포는 취소하지 않음
+
+env:
+  REGISTRY: ghcr.io
+  # ✨ [수정] IMAGE_NAME 정의를 제거했습니다. JOB 내부에서 동적으로 설정됩니다.
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ✨ [수정] 이 단계에서 OWNER_LC를 설정하고, IMAGE_NAME을 즉시 설정합니다.
+      - name: Set owner name and image name
+        run: |
+          # 1. OWNER_LC 설정 (소문자화)
+          OWNER_LC=${{ github.repository_owner }}
+          OWNER_LC=${OWNER_LC,,} 
+          echo "OWNER_LC=$OWNER_LC" >> $GITHUB_ENV
+
+          # 2. IMAGE_NAME 설정 (GHCR 규칙에 맞게 소문자 소유자 이름 사용)
+          IMAGE_NAME="$OWNER_LC/chwimeet-backend"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      # gradle wrapper 보안 검증
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+        with:
+          gradle-wrapper-path: backend/gradle/wrapper/gradle-wrapper.jar
+
+      # Gradle 실행 JVM(JDK 24)
+      - name: Setup Java (Gradle JVM = 24)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "24"
+          cache: gradle
+          cache-dependency-path: backend/build.gradle.kts
+
+      # 코드 toolchain용 JDK 25 미리 설치
+      - name: Provision Java 25 for toolchain
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          build-root-directory: backend
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # 빌드 (테스트 제외 - CI에서 이미 테스트 완료)
+      - name: Build with Gradle
+        run: ./gradlew clean bootJar -x test --no-daemon
+
+      # Docker 메타데이터 추출
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # ✨ 수정: env.IMAGE_NAME이 Step에서 설정되었으므로 이제 접근 가능
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      # GHCR 로그인
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Docker 이미지 빌드 및 Push
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # cache-from과 cache-to는 그대로 유지
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      - name: Image digest
+        run: echo "🐳 Pushed image - ${{ steps.meta.outputs.tags }}"
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # 🔥 여기서 build-and-push의 backend 디렉토리 기본값을 덮어씀
+    defaults:
+      run:
+        working-directory: .   # 루트에서 실행
+
+    environment:
+      name: production
+      url: https://${{ vars.APP_DOMAIN }}
+
+    steps:
+      # (선택) 코드가 필요 없으면 checkout은 생략해도 됨
+      # - name: Checkout
+      #   uses: actions/checkout@v4
+
+      # 1. AWS 자격 구성
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # 2. Name 태그로 EC2 인스턴스 조회
+      - name: Get Instance ID
+        id: get_instance_id
+        env:
+          EC2_INSTANCE_TAG_NAME: team1-backend
+        shell: bash
+        run: |
+          set -e
+          
+          echo "🔍 Finding EC2 instance with tag Name=${EC2_INSTANCE_TAG_NAME}"
+          
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${EC2_INSTANCE_TAG_NAME}" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          
+          echo "INSTANCE_ID raw: '${INSTANCE_ID}'"
+          
+          # ✅ 여기서 안전하게 검증 (괄호/복잡한 문법 없이)
+          if [ -z "${INSTANCE_ID}" ] || [ "${INSTANCE_ID}" = "None" ]; then
+            echo "No running instance found"
+            exit 1
+          fi
+          
+          echo "✅ Found instance: ${INSTANCE_ID}"
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> "${GITHUB_ENV}"

@@ -3,10 +3,13 @@ name: be-ci
 on:
   pull_request:
     paths:
-      - "**"
+      - "backend/**"
       - ".github/workflows/be-ci.yml"
   push:
     branches: ["dev", "feat/**"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/be-ci.yml"
 
 permissions:
   contents: read
@@ -14,6 +17,10 @@ permissions:
 concurrency:
   group: be-ci-${{ github.ref }}
   cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
 
 jobs:
   ci:
@@ -32,12 +39,14 @@ jobs:
 
       # .env 파일 생성
       - name: Create .env file
+        working-directory: backend
         run: |
-          echo "${{ secrets.DOT_ENV }}" > .env
+          echo "${{ secrets.DOT_ENV_CI }}" > .env
           echo "✅ .env file created"
 
       # Docker Compose로 MySQL & Redis 시작
       - name: Start MySQL and Redis
+        working-directory: backend
         run: |
           docker compose up -d
           echo "⏳ Waiting for services to be ready..."
@@ -107,7 +116,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: junit-results
-          path: build/test-results/test
+          path: backend/build/test-results/test
           if-no-files-found: ignore
           retention-days: 3
 
@@ -117,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: junit-report-html
-          path: build/reports/tests/test
+          path: backend/build/reports/tests/test
           if-no-files-found: ignore
 
       # 커버리지 리포트 업로드
@@ -126,11 +135,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: build/reports/jacoco/test/html
+          path: backend/build/reports/jacoco/test/html
           if-no-files-found: ignore
           retention-days: 3
 
       # Docker Compose 정리
       - name: Stop Docker services
         if: always()
+        working-directory: backend
         run: docker compose down -v
