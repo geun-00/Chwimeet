@@ -199,10 +199,9 @@ jobs:
             --comment "Fully automated Blue-Green deployment" \
             --timeout-seconds 600 \
             --parameters 'commands=[
-              "set -e",
-              "cd /home/ec2-user/app",
-              "bash /home/ec2-user/app/deploy.sh"
-            ]' \
+                "set -e",
+                "sudo -u ec2-user bash -c \"cd /home/ec2-user/app && bash /home/ec2-user/app/deploy.sh\""
+              ]'
             --query 'Command.CommandId' \
             --output text)
 
