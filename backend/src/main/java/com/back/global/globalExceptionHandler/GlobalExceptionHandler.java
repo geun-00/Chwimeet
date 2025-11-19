@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Comparator;
 import java.util.NoSuchElementException;
@@ -33,6 +34,26 @@ public class GlobalExceptionHandler {
                         "존재하지 않는 데이터입니다."
                 ),
                 NOT_FOUND
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<RsData<Void>> handle(HttpServletRequest request, MethodArgumentTypeMismatchException e) {
+
+        log.warn("error at [{} {}]: {}",
+                request.getMethod(), request.getRequestURI(), e.getMessage(), e);
+
+        String param = e.getName();
+        String requiredType = e.getRequiredType() != null
+                ? e.getRequiredType().getSimpleName()
+                : "unknown";
+
+        return new ResponseEntity<>(
+                new RsData<>(
+                        BAD_REQUEST,
+                        "파라미터 %s 는  %s 타입이어야 합니다.".formatted(param, requiredType)
+                ),
+                BAD_REQUEST
         );
     }
 
