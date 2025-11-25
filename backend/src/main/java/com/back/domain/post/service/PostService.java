@@ -41,6 +41,7 @@ public class PostService {
     private final PostFavoriteRepository postFavoriteRepository;
     private final PostQueryRepository postQueryRepository;
     private final PostFavoriteQueryRepository postFavoriteQueryRepository;
+    private final PostVectorService postVectorService;
     private final S3Uploader s3;
 
     private final RegionRepository regionRepository;
@@ -102,6 +103,8 @@ public class PostService {
         post.getPostRegions().addAll(postRegions);
 
         this.postRepository.save(post);
+
+        postVectorService.indexPost(post);
 
         return PostCreateResBody.of(post);
     }
@@ -285,6 +288,8 @@ public class PostService {
                 .toList();
 
         post.resetPostRegions(newPostRegions);
+
+        postVectorService.indexPost(post);
     }
 
 
