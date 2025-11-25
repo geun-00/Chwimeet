@@ -9,14 +9,14 @@ public record ReservationLogDto(
         Long id,
         ReservationStatus status,
         LocalDateTime createdAt,
-        String authorName
+        String authorNickname
 ) {
-    public ReservationLogDto(ReservationLog log, String authorName) {
+    public ReservationLogDto(ReservationLog log, String authorNickname) {
         this(
                 log.getId(),
                 log.getStatus(),
                 log.getCreatedAt(),
-                authorName
+                authorNickname
         );
     }
 }

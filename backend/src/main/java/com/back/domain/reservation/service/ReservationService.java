@@ -496,25 +496,25 @@ public class ReservationService {
                 .collect(Collectors.toSet());
 
         // 3. authorIds로 Member 한 번에 조회
-        Map<Long, String> authorNameMap = authorIds.isEmpty()
+        Map<Long, String> authorNicknameMap = authorIds.isEmpty()
                 ? Collections.emptyMap()
                 : memberRepository.findAllById(authorIds)
                 .stream()
                 .collect(Collectors.toMap(
                         Member::getId,
-                        Member::getName
+                        Member::getNickname
                 ));
 
 
         // 4. 로그 DTO로 변환하면서 authorName 매핑
         List<ReservationLogDto> logDtos = logs.stream()
                 .map(log -> {
-                    String authorName = authorNameMap.get(log.getAuthorId());
+                    String authorNickname = authorNicknameMap.get(log.getAuthorId());
                     // 기본값 처리(탈퇴/없음 등) 하고 싶다면 여기서
-                    if (authorName == null) {
-                        authorName = "알 수 없는 사용자";
+                    if (authorNickname == null) {
+                        authorNickname = "알 수 없는 사용자";
                     }
-                    return new ReservationLogDto(log, authorName);
+                    return new ReservationLogDto(log, authorNickname);
                 })
                 .toList();
 
