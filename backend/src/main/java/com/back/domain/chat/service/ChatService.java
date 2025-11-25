@@ -4,6 +4,8 @@ import com.back.domain.chat.dto.*;
 import com.back.domain.chat.entity.ChatMember;
 import com.back.domain.chat.entity.ChatMessage;
 import com.back.domain.chat.entity.ChatRoom;
+import com.back.domain.chat.pubsub.publisher.ChatMessagePublisher;
+import com.back.domain.chat.pubsub.publisher.ChatNotificationPublisher;
 import com.back.domain.chat.repository.*;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
@@ -15,7 +17,7 @@ import com.back.standard.util.page.PageUt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +29,6 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class ChatService {
 
-    private final ChatWebsocketService chatWebsocketService;
     private final MemberRepository memberRepository;
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -35,7 +36,9 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomQueryRepository chatRoomQueryRepository;
     private final ChatMessageQueryRepository chatMessageQueryRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
+    private final ChatMessagePublisher chatMessagePublisher;
+    private final ChatNotificationPublisher chatNotificationPublisher;
 
     @Transactional
     public CreateChatRoomResBody createOrGetChatRoom(Long postId, Long memberId) {
@@ -81,7 +84,7 @@ public class ChatService {
                 0
         );
 
-        chatWebsocketService.notify(
+        chatNotificationPublisher.publish(
                 hostId,
                 new ChatNotiDto("NEW_ROOM", newRoom)
         );
@@ -164,9 +167,9 @@ public class ChatService {
                 chatMessage.getCreatedAt()
         );
 
-        chatWebsocketService.broadcastMessage(chatRoomId, chatMessageDto);
+        chatMessagePublisher.publish(chatRoomId, chatMessageDto);
 
-        chatWebsocketService.notify(
+        chatNotificationPublisher.publish(
                 otherMemberId,
                 new ChatNotiDto("NEW_MESSAGE", NewMessageNotiDto.from(chatRoomId, chatMessageDto))
         );
