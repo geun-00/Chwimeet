@@ -1,5 +1,7 @@
 package com.back.global.security;
 
+import com.back.global.oauth.CustomOAuth2UserService;
+import com.back.global.oauth.OAuth2SuccessHandler;
 import com.back.global.rsData.RsData;
 import com.back.standard.util.json.JsonUt;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,9 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomAuthenticationFilter customAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver;
 
     @Value("${custom.cors.allowed-origins:http://localhost:3000}")
     private String allowedOrigins;
@@ -44,10 +49,11 @@ public class SecurityConfig {
             "/swagger-ui.html",       // Swagger UI HTML
             "/v3/api-docs", "/v3/api-docs/**", // Swagger OpenApi JSON 문서
             "/h2-console/**",          // H2 콘솔 (개발용)
-            "/actuator/health", "/actuator/health/**", "/actuator/info",    // Spring Actuator
+            "/actuator/health", "/actuator/health/**", "/actuator/info", "/actuator/prometheus",    // Spring Actuator
             "/api/actuator/health", "/api/actuator/health/**", "/api/actuator/info",
             "/.well-known/acme-challenge/**",
-            "/ws-chat/**"
+            "/ws-chat/**",
+            "/hikari-status"
     };
 
     @Bean
@@ -73,6 +79,12 @@ public class SecurityConfig {
                 .sessionManagement(AbstractHttpConfigurer::disable) // 세션 관리 비활성화
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // OAuth2 로그인 설정
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(auth -> auth.authorizationRequestResolver(customOAuth2AuthorizationRequestResolver))
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler)
+                )
                 // 인증 실패 시 응답 처리
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling

@@ -14,6 +14,7 @@ spring:
   jackson:
     serialization:
       fail-on-empty-beans: false
+    time-zone: Asia/Seoul
   jpa:
     show-sql: true
     hibernate:
@@ -23,6 +24,9 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+      jdbc:
+        time_zone: Asia/Seoul
+    open-in-view: false
   mail:
     host: ${SPRING__MAIL__HOST}
     port: ${SPRING__MAIL__PORT}
@@ -43,15 +47,39 @@ spring:
       password: ${SPRING__REDIS__PASSWORD}
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY}
+      api-key: ${SPRING__AI__OPENAI__API_KEY}
       chat:
         options:
           model: gpt-4.1-mini
-          temperature: 0.0
+      embedding:
+        options:
+          model: text-embedding-3-small
+
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 30MB
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__KAKAO__CLIENT_ID}
+            client-secret: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__KAKAO__CLIENT_SECRET}
+            redirect-uri: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__KAKAO__REDIRECT_URI}
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope:
+              - profile_nickname
+              - profile_image
+              - account_email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 logging:
@@ -59,18 +87,25 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
+    org.springframework.security: DEBUG
     com.back: DEBUG
 custom:
   cors:
-    allowed-origins: ${CUSTOM_CORS_ALLOWED_ORIGINS}
+    allowed-origins: ${CUSTOM__CORS__ALLOWED__ORIGINS}
   jwt:
-    secretKey: ${CUSTOM__JWT__SECRETKEY}
+    secret-key: ${CUSTOM__JWT__SECRET_KEY}
   accessToken:
-    expireSeconds: 1000
+    expire-seconds: 1000
   refreshToken:
-    expireSeconds: 1000000
+    expire-seconds: 1000000
 
 cloud:
   aws:
     s3:
       bucket: ${CLOUD__AWS__S3__BUCKET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus

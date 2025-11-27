@@ -24,6 +24,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://repo.spring.io/milestone") }
 }
 
 dependencies {
@@ -31,12 +32,16 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.ai:spring-ai-starter-model-openai")
+    implementation("org.springframework.ai:spring-ai-starter-model-openai") // Chat
+    implementation("org.springframework.ai:spring-ai-openai")               // Embedding
+    implementation("org.springframework.ai:spring-ai-rag")
+    implementation("org.springframework.ai:spring-ai-starter-vector-store-mariadb")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.1")
     runtimeOnly("com.h2database:h2")
-    runtimeOnly("com.mysql:mysql-connector-j")
+    
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
@@ -61,12 +66,24 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:mariadb")
 
     // AWS S3
     implementation("software.amazon.awssdk:s3:2.25.10")
 
     // STMP
     implementation("org.springframework.boot:spring-boot-starter-mail")
+
+    // Quartz
+    implementation("org.springframework.boot:spring-boot-starter-quartz")
+
+    // OAUTH2
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+
+    // 모니터링
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
 val querydslSrcDir = "src/main/generated"

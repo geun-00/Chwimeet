@@ -7,6 +7,7 @@ import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.service.PostContentGenerateService;
+import com.back.domain.post.service.PostSearchService;
 import com.back.domain.post.service.PostService;
 import com.back.domain.review.service.ReviewSummaryService;
 import com.back.global.annotations.ValidateImages;
@@ -27,7 +28,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -37,6 +40,7 @@ public class PostController implements PostApi {
     private final PostService postService;
     private final ReviewSummaryService reviewSummaryService;
     private final PostContentGenerateService postContentGenerateService;
+    private final PostSearchService postSearchService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RsData<PostCreateResBody>> createPost(
@@ -44,7 +48,7 @@ public class PostController implements PostApi {
             @RequestPart(value = "file", required = false) List<MultipartFile> files,
             @AuthenticationPrincipal SecurityUser user
     ) {
-        
+
         PostCreateResBody body = this.postService.createPost(reqBody, files, user.getId());
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -149,4 +153,28 @@ public class PostController implements PostApi {
         RsData<GenPostDetailResBody> response = new RsData<>(HttpStatus.OK, "응답 생성 성공", result);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/search/ai")
+    public ResponseEntity<?> searchPostsWithAi(
+            @RequestParam String query,
+            @AuthenticationPrincipal SecurityUser user
+    ) {
+
+        Long memberId = (user != null ? user.getId() : null);
+
+
+        List<PostListResBody> recommendedPosts = postSearchService.searchPosts(query, memberId);
+
+
+        String answer = postSearchService.searchWithLLM(query, recommendedPosts);
+
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("query", query);
+        result.put("answer", answer);
+        result.put("posts", recommendedPosts);
+
+        return ResponseEntity.ok(result);
+    }
+
 }
