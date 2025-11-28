@@ -105,10 +105,6 @@ jobs:
           done
           echo "✅ Redis is ready"
 
-      # JOOQ 소스 생성
-      - name: Generate JOOQ sources
-        run: ./gradlew generateJooq --no-daemon --info
-
       - name: Make gradlew executable (Linux)
         run: chmod +x ./gradlew
 
