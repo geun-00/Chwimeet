@@ -135,11 +135,6 @@ jooq {
     }
 }
 
-tasks.withType<JooqGenerate>().configureEach {
-    // 기본적으로는 jOOQ 코드 생성 안 돌림 (CI 포함)
-    enabled = false
-}
-
 // ✅ JaCoCo 버전을 Java 25를 지원하는 최신 버전으로 업데이트
 jacoco {
     toolVersion = "0.8.13" // Java 25 지원

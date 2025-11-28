@@ -104,11 +104,11 @@ jobs:
 
       # 테스트 + 커버리지
       - name: Run tests (JUnit5) with coverage
-        run: ./gradlew clean test jacocoTestReport --info --stacktrace --no-daemon
+        run: ./gradlew clean test jacocoTestReport -x generateJooq --info --stacktrace --no-daemon
 
       # 빌드(테스트/커버리지 재실행 방지)
       - name: Assemble (no tests)
-        run: ./gradlew assemble -x test -x jacocoTestReport --no-daemon
+        run: ./gradlew assemble -x test -x jacocoTestReport -x generateJooq --no-daemon
 
       # 테스트 결과 업로드
       - name: Upload test results (JUnit XML)
