@@ -6,6 +6,7 @@ import com.back.domain.member.service.AuthTokenService;
 import com.back.domain.member.service.EmailService;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.member.service.RefreshTokenStore;
+import com.back.domain.review.service.ReviewSummaryService;
 import com.back.global.exception.ServiceException;
 import com.back.global.rsData.RsData;
 import com.back.global.s3.S3Uploader;
@@ -31,6 +32,7 @@ public class MemberController implements MemberApi{
     private final CookieHelper cookieHelper;
     private final EmailService emailService;
     private final S3Uploader s3Uploader;
+    private final ReviewSummaryService reviewSummaryService;
 
     @PostMapping
     public ResponseEntity<RsData<MemberDto>> join(
@@ -125,5 +127,12 @@ public class MemberController implements MemberApi{
     ) {
         emailService.verifyCode(reqBody.email(), reqBody.code());
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "이메일 인증이 완료되었습니다.", new MemberVerifyResBody(true)));
+    }
+
+    @GetMapping("/{id}/reviews/summary")
+    public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
+        String body = reviewSummaryService.summarizePostReviews(id);
+
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
     }
 }

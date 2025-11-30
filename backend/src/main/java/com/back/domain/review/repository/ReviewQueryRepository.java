@@ -93,7 +93,23 @@ public class ReviewQueryRepository extends CustomQuerydslRepositorySupport {
         return selectFrom(review)
                 .join(review.reservation, reservation)
                 .join(reservation.post, post)
-                .where(post.id.eq(postId))
+                .where(
+                        post.id.eq(postId),
+                        review.isBanned.isFalse()
+                )
+                .orderBy(review.id.desc())
+                .limit(30)
+                .fetch();
+    }
+
+    public List<Review> findTop30ByMemberId(Long memberId) {
+        return selectFrom(review)
+                .join(review.reservation, reservation)
+                .join(reservation.post, post)
+                .where(
+                        post.author.id.eq(memberId),
+                        review.isBanned.isFalse()
+                )
                 .orderBy(review.id.desc())
                 .limit(30)
                 .fetch();

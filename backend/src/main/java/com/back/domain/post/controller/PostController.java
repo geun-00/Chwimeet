@@ -137,7 +137,7 @@ public class PostController implements PostApi {
 
 	@GetMapping("/{id}/reviews/summary")
 	public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
-		String body = reviewSummaryService.summarizeReviews(id);
+		String body = reviewSummaryService.summarizePostReviews(id);
 
 		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
 	}
