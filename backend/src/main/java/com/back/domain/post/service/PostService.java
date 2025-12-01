@@ -1,12 +1,11 @@
 package com.back.domain.post.service;
 
-import com.back.domain.post.common.EmbeddingStatus;
-import com.back.domain.post.dto.req.PostEmbeddingDto;
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
+import com.back.domain.post.dto.req.PostEmbeddingDto;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.*;
 import com.back.domain.post.entity.*;
@@ -30,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
