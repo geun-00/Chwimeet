@@ -4,7 +4,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     jacoco
 }
-val springAiVersion by extra("1.0.3")
+val springAiVersion by extra("1.1.0")
 
 group = "com"
 version = "0.0.1-SNAPSHOT"
@@ -36,6 +36,7 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-openai")               // Embedding
     implementation("org.springframework.ai:spring-ai-rag")
     implementation("org.springframework.ai:spring-ai-starter-vector-store-mariadb")
+    implementation("org.springframework.ai:spring-ai-starter-mcp-server-webmvc")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")

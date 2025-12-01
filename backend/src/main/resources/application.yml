@@ -46,6 +46,13 @@ spring:
       timeout: 10000
       password: ${SPRING__REDIS__PASSWORD}
   ai:
+    mcp:
+      server:
+        name: Chwi-meet
+        type: sync
+        protocol: streamable
+        stdio: false
+        enabled: true
     openai:
       api-key: ${SPRING__AI__OPENAI__API_KEY}
       chat:
