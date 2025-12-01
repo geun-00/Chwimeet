@@ -31,10 +31,6 @@ jobs:
     env:
       CI: true
       SPRING_PROFILES_ACTIVE: test
-      # ✅ JOOQ 생성용 환경변수
-      SPRING__DATASOURCE__USERNAME: root
-      SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
-      SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
 
     steps:
       - name: Checkout
@@ -59,7 +55,7 @@ jobs:
           java-version: "25"
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: actions/gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
@@ -70,18 +66,8 @@ jobs:
           echo "✅ .env file created"
 
       # ========================================
-      # 🚀 최적화: JOOQ 생성 결과 캐싱
+      # 🚀 옵션 2: 캐시 없이 매번 생성 (최고 신뢰성)
       # ========================================
-      - name: Cache JOOQ generated sources
-        id: cache-jooq
-        uses: actions/cache@v4
-        with:
-          path: backend/src/generated
-          key: jooq-${{ hashFiles('backend/src/main/resources/db/migration/*.sql', 'backend/build.gradle.kts') }}
-          restore-keys: |
-            jooq-
-
-      # Docker Compose로 MariaDB & Redis 시작
       - name: Start MariaDB and Redis
         run: |
           docker compose up -d mariadb redis
@@ -113,23 +99,36 @@ jobs:
           java -version
 
       # ========================================
-      # 🚀 최적화: Flyway 마이그레이션이 변경된 경우만 JOOQ 재생성
+      # 🚀 매번 JOOQ 생성 (캐시 사용 안 함)
       # ========================================
-      - name: Generate JOOQ sources
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
+      - name: Load database schema
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "=== Loading database schema ==="
+          
+          if [ -f "src/main/resources/sql/init_tables.sql" ]; then
+            docker exec -i chwimeet-mariadb mariadb -uroot -p${DB_PASSWORD} chwimeet < src/main/resources/sql/init_tables.sql
+            echo "✅ Schema loaded successfully"
+          else
+            echo "❌ init_tables.sql not found"
+            exit 1
+          fi
+
+      - name: Generate JOOQ sources (always)
         env:
           SPRING__DATASOURCE__USERNAME: root
           SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
           SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
         run: |
-          echo "=== Starting JOOQ Generation ==="
+          echo "=== Starting JOOQ Generation (${{ github.ref_name }} branch) ==="
           echo "Checking environment variables (masked):"
           echo "SPRING__DATASOURCE__USERNAME=$SPRING__DATASOURCE__USERNAME"
           echo "SPRING__DATASOURCE__URL=$SPRING__DATASOURCE__URL"
           echo ""
-          echo "⚙️  JOOQ plugin will automatically run Flyway migration"
+          echo "ℹ️  JOOQ는 매번 새로 생성됩니다 (캐시 사용 안 함)"
+          echo "   이유: 테스트 신뢰성 최우선, CI/CD 캐시 충돌 방지"
           
-          # Run with stacktrace for better error messages
           ./gradlew generateJooqClasses --no-daemon --stacktrace
           
           if [ -d "src/generated/com/back/jooq/tables" ]; then
@@ -143,19 +142,8 @@ jobs:
           echo "=== Verifying tables in database ==="
           docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} -e "USE chwimeet; SHOW TABLES;"
 
-      - name: Skip JOOQ generation (using cache)
-        if: steps.cache-jooq.outputs.cache-hit == 'true'
-        run: |
-          echo "⚡ JOOQ generation skipped (using cached sources)"
-          if [ -d "src/generated/com/back/jooq/tables" ]; then
-            ls -la src/generated/com/back/jooq/tables/
-          else
-            echo "⚠️  Cache exists but files missing - will regenerate"
-            exit 1
-          fi
-
       # ========================================
-      # 🚀 최적화: 테스트 병렬 실행
+      # 🚀 테스트 병렬 실행
       # ========================================
       - name: Run tests (JUnit5) with coverage
         run: |
@@ -171,12 +159,11 @@ jobs:
       - name: Assemble (no tests)
         run: ./gradlew assemble -x test -x jacocoTestReport -x generateJooqClasses --build-cache --no-daemon
 
-      # 테스트 결과 업로드
       - name: Upload test results (JUnit XML)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: junit-results
+          name: junit-results-${{ github.ref_name }}
           path: backend/build/test-results/test
           if-no-files-found: ignore
           retention-days: 3
@@ -185,7 +172,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: junit-report-html
+          name: junit-report-html-${{ github.ref_name }}
           path: backend/build/reports/tests/test
           if-no-files-found: ignore
 
@@ -193,12 +180,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco-report
+          name: jacoco-report-${{ github.ref_name }}
           path: backend/build/reports/jacoco/test/html
           if-no-files-found: ignore
           retention-days: 3
 
-      # Docker Compose 정리
       - name: Stop Docker services
         if: always()
         run: docker compose down -v
