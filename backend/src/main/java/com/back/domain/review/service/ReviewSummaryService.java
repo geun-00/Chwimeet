@@ -20,7 +20,7 @@ public class ReviewSummaryService {
     @Value("${custom.ai.review-summary-prompt}")
     private String reviewSummaryPrompt;
 
-    public String summarizeReviews(Long postId) {
+    public String summarizePostReviews(Long postId) {
         List<Review> reviews = reviewQueryRepository.findTop30ByPostId(postId);
 
         if (reviews.isEmpty()) {
@@ -36,5 +36,23 @@ public class ReviewSummaryService {
                          .user("후기:\n" + reviewsText)
                          .call()
                          .content();
+    }
+
+    public String summarizeMemberReviews(Long memberId) {
+        List<Review> reviews = reviewQueryRepository.findTop30ByMemberId(memberId);
+
+        if (reviews.isEmpty()) {
+            return "후기가 없습니다.";
+        }
+
+        String reviewsText = reviews.stream()
+                .map(Review::getComment)
+                .collect(Collectors.joining("\n"));
+
+        return chatClient.prompt()
+                .system(reviewSummaryPrompt)
+                .user("후기:\n" + reviewsText)
+                .call()
+                .content();
     }
 }

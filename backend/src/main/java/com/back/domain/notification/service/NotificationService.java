@@ -12,8 +12,9 @@ import com.back.domain.notification.repository.NotificationQueryRepository;
 import com.back.domain.notification.repository.NotificationRepository;
 import com.back.domain.reservation.entity.Reservation;
 import com.back.domain.reservation.repository.ReservationQueryRepository;
+import com.back.domain.review.entity.Review;
+import com.back.domain.review.repository.ReviewQueryRepository;
 import com.back.global.exception.ServiceException;
-import com.back.global.sse.EmitterRepository;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +24,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,25 +39,27 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationQueryRepository notificationQueryRepository;
     private final ReservationQueryRepository reservationQueryRepository;
+    private final ReviewQueryRepository reviewQueryRepository;
     private final List<NotificationDataMapper<? extends NotificationData>> mappers;
     private final Map<NotificationType.GroupType, Function<List<Long>, Map<Long, ?>>> batchLoaders = new HashMap<>();
-    private final EmitterRepository emitterRepository;
-    private static final Long TIMEOUT = 60L * 1000 * 60; // 1시간
+    private final SseNotificationService sseNotificationService;
 
     public NotificationService(
             MemberRepository memberRepository,
             NotificationRepository notificationRepository,
             NotificationQueryRepository notificationQueryRepository,
             ReservationQueryRepository reservationQueryRepository,
+            ReviewQueryRepository reviewQueryRepository,
             List<NotificationDataMapper<? extends NotificationData>> mappers,
-            EmitterRepository emitterRepository
+            SseNotificationService sseNotificationService
     ) {
         this.memberRepository = memberRepository;
         this.notificationRepository = notificationRepository;
         this.notificationQueryRepository = notificationQueryRepository;
         this.reservationQueryRepository = reservationQueryRepository;
+        this.reviewQueryRepository = reviewQueryRepository;
         this.mappers = mappers;
-        this.emitterRepository = emitterRepository;
+        this.sseNotificationService = sseNotificationService;
         setBatchLoaders();
     }
 
@@ -65,39 +68,10 @@ public class NotificationService {
                 reservationQueryRepository.findWithPostAndAuthorByIds(targetIds)
                         .stream().collect(Collectors.toMap(Reservation::getId, r -> r))
         );
-    }
-
-    public SseEmitter subscribe(Long memberId) {
-        String emitterId = memberId + "_" + System.currentTimeMillis();
-        SseEmitter emitter = createAndSaveEmitter(memberId, emitterId);
-
-        sendInitialEvent(memberId, emitterId, emitter);
-        registerEmitterCallbacks(memberId, emitterId, emitter);
-
-        return emitter;
-    }
-
-    private SseEmitter createAndSaveEmitter(Long memberId, String emitterId) {
-        SseEmitter emitter = new SseEmitter(TIMEOUT);
-        emitterRepository.save(memberId, emitterId, emitter);
-        return emitter;
-    }
-
-    private void sendInitialEvent(Long memberId, String emitterId, SseEmitter emitter) {
-        try {
-            emitter.send(SseEmitter.event()
-                    .id(emitterId)
-                    .data("connected"));
-        } catch (Exception e) {
-            log.error("SSE 발행 중 예외 발생: memberId={}, emitterId={}, error={}",
-                    memberId, emitterId, e.getMessage(), e);
-        }
-    }
-
-    private void registerEmitterCallbacks(Long memberId, String emitterId, SseEmitter emitter) {
-        emitter.onCompletion(() -> emitterRepository.deleteEmitter(memberId, emitterId));
-        emitter.onTimeout(() -> emitterRepository.deleteEmitter(memberId, emitterId));
-        emitter.onError(e -> emitterRepository.deleteEmitter(memberId, emitterId));
+        batchLoaders.put(NotificationType.GroupType.REVIEW, targetIds ->
+                reviewQueryRepository.findWithReservationAndPostAndAuthorsByIds(targetIds)
+                        .stream().collect(Collectors.toMap(Review::getId, r -> r))
+        );
     }
 
     @Transactional
@@ -111,21 +85,7 @@ public class NotificationService {
 
         NotificationResBody<?> dto = EntityToResBody(saved);
 
-        sendNotification(targetMemberId, dto);
-    }
-
-    private void sendNotification(Long targetMemberId, NotificationResBody<? extends NotificationData> message) {
-        Map<String, SseEmitter> emitters = emitterRepository.findEmittersByMemberId(targetMemberId);
-
-        emitters.forEach((emitterId, emitter) -> {
-            try {
-                emitter.send(SseEmitter.event()
-                        .id(emitterId)
-                        .data(message));
-            } catch (Exception e) {
-                emitterRepository.deleteEmitter(targetMemberId, emitterId);
-            }
-        });
+        sseNotificationService.sendNotification(targetMemberId, dto);
     }
 
     public NotificationUnreadResBody hasUnread(Long memberId) {
@@ -215,6 +175,13 @@ public class NotificationService {
         Map<NotificationType.GroupType, Map<Long, ?>> loaded = loadEntitiesByGroup(List.of(notification));
         List<NotificationResBody<? extends NotificationData>> bodies = mapToResBody(List.of(notification), loaded);
         return bodies.get(0);
+    }
+
+    @Transactional
+    public int deleteOldNotifications() {
+        return notificationRepository.deleteOldReadNotifications(
+                LocalDateTime.now().minusDays(3)
+        );
     }
 }
 

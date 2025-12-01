@@ -39,8 +39,8 @@ public class PostController implements PostApi {
 
     private final PostService postService;
     private final ReviewSummaryService reviewSummaryService;
-    private final PostContentGenerateService postContentGenerateService;
     private final PostSearchService postSearchService;
+	private final PostContentGenerateService postContentGenerateService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RsData<PostCreateResBody>> createPost(
@@ -55,95 +55,96 @@ public class PostController implements PostApi {
                 .body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", body));
     }
 
-    @GetMapping
-    public ResponseEntity<RsData<PagePayload<PostListResBody>>> getPostList(
-            @AuthenticationPrincipal SecurityUser user,
-            @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) List<Long> regionIds) {
+	@GetMapping
+	public ResponseEntity<RsData<PagePayload<PostListResBody>>> getPostList(
+		@AuthenticationPrincipal SecurityUser user,
+		@ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+		@RequestParam(required = false) String keyword,
+		@RequestParam(required = false) List<Long> categoryIds,
+		@RequestParam(required = false) List<Long> regionIds) {
 
-        Long memberId = (user != null) ? user.getId() : null;
-        PagePayload<PostListResBody> body = this.postService.getPostList(pageable, keyword, categoryId, regionIds, memberId);
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
-    }
+		Long memberId = (user != null) ? user.getId() : null;
+		PagePayload<PostListResBody> body = this.postService.getPostList(pageable, keyword, categoryIds, regionIds,
+			memberId);
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<RsData<PostDetailResBody>> getPostById(
-            @PathVariable Long id,
-            @AuthenticationPrincipal SecurityUser user
-    ) {
-        Long memberId = (user != null) ? user.getId() : null;
+	@GetMapping("/{id}")
+	public ResponseEntity<RsData<PostDetailResBody>> getPostById(
+		@PathVariable Long id,
+		@AuthenticationPrincipal SecurityUser user
+	) {
+		Long memberId = (user != null) ? user.getId() : null;
 
-        PostDetailResBody body = this.postService.getPostById(id, memberId);
+		PostDetailResBody body = this.postService.getPostById(id, memberId);
 
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
+	}
 
-    @GetMapping("/{id}/reserved-dates")
-    public ResponseEntity<RsData<List<LocalDateTime>>> getReservedDates(
-            @PathVariable Long id
-    ) {
-        List<LocalDateTime> body = this.postService.getReservedDates(id);
+	@GetMapping("/{id}/reserved-dates")
+	public ResponseEntity<RsData<List<LocalDateTime>>> getReservedDates(
+		@PathVariable Long id
+	) {
+		List<LocalDateTime> body = this.postService.getReservedDates(id);
 
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
+	}
 
-    @GetMapping("/my")
-    public ResponseEntity<RsData<PagePayload<PostListResBody>>> getMyPostList(
-            @AuthenticationPrincipal SecurityUser user,
-            @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        PagePayload<PostListResBody> body = this.postService.getMyPosts(user.getId(), pageable);
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
-    }
+	@GetMapping("/my")
+	public ResponseEntity<RsData<PagePayload<PostListResBody>>> getMyPostList(
+		@AuthenticationPrincipal SecurityUser user,
+		@ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+		PagePayload<PostListResBody> body = this.postService.getMyPosts(user.getId(), pageable);
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
+	}
 
-    @PostMapping("/favorites/{id}")
-    public ResponseEntity<RsData<Boolean>> toggleFavorite(
-            @PathVariable("id") Long postId,
-            @AuthenticationPrincipal SecurityUser user) {
+	@PostMapping("/favorites/{id}")
+	public ResponseEntity<RsData<Boolean>> toggleFavorite(
+		@PathVariable("id") Long postId,
+		@AuthenticationPrincipal SecurityUser user) {
 
-        boolean isFavorite = postService.toggleFavorite(postId, user.getId());
+		boolean isFavorite = postService.toggleFavorite(postId, user.getId());
 
-        String msg = isFavorite ? "즐겨찾기에 추가되었습니다." : "즐겨찾기가 해제되었습니다.";
+		String msg = isFavorite ? "즐겨찾기에 추가되었습니다." : "즐겨찾기가 해제되었습니다.";
 
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, msg, isFavorite));
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, msg, isFavorite));
+	}
 
-    @GetMapping("/favorites")
-    public ResponseEntity<RsData<PagePayload<PostListResBody>>> getFavoritePosts(
-            @AuthenticationPrincipal SecurityUser user,
-            @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        PagePayload<PostListResBody> body = this.postService.getFavoritePosts(user.getId(), pageable);
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
-    }
+	@GetMapping("/favorites")
+	public ResponseEntity<RsData<PagePayload<PostListResBody>>> getFavoritePosts(
+		@AuthenticationPrincipal SecurityUser user,
+		@ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+		PagePayload<PostListResBody> body = this.postService.getFavoritePosts(user.getId(), pageable);
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<RsData<Void>> updatePost(
-            @PathVariable Long id,
-            @Valid @RequestPart("request") PostUpdateReqBody reqBody,
-            @RequestPart(value = "file", required = false) List<MultipartFile> files,
-            @AuthenticationPrincipal SecurityUser user) {
+	@PutMapping("/{id}")
+	public ResponseEntity<RsData<Void>> updatePost(
+		@PathVariable Long id,
+		@Valid @RequestPart("request") PostUpdateReqBody reqBody,
+		@RequestPart(value = "file", required = false) List<MultipartFile> files,
+		@AuthenticationPrincipal SecurityUser user) {
 
-        postService.updatePost(id, reqBody, files, user.getId());
+		postService.updatePost(id, reqBody, files, user.getId());
 
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 수정되었습니다."));
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 수정되었습니다."));
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<RsData<Void>> deletePost(
-            @PathVariable Long id,
-            @AuthenticationPrincipal SecurityUser user) {
-        this.postService.deletePost(id, user.getId());
+	@DeleteMapping("/{id}")
+	public ResponseEntity<RsData<Void>> deletePost(
+		@PathVariable Long id,
+		@AuthenticationPrincipal SecurityUser user) {
+		this.postService.deletePost(id, user.getId());
 
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 삭제되었습니다."));
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 삭제되었습니다."));
+	}
 
-    @GetMapping("/{id}/reviews/summary")
-    public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
-        String body = reviewSummaryService.summarizeReviews(id);
+	@GetMapping("/{id}/reviews/summary")
+	public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
+		String body = reviewSummaryService.summarizePostReviews(id);
 
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
+	}
 
     @PostMapping("/genDetail")
     public ResponseEntity<RsData<GenPostDetailResBody>> genDetail(
@@ -154,27 +155,24 @@ public class PostController implements PostApi {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/search/ai")
-    public ResponseEntity<?> searchPostsWithAi(
-            @RequestParam String query,
-            @AuthenticationPrincipal SecurityUser user
-    ) {
+	@GetMapping("/search/ai")
+	public ResponseEntity<RsData<?>> searchPostsWithAi(
+		@RequestParam String query,
+		@AuthenticationPrincipal SecurityUser user
+	) {
 
-        Long memberId = (user != null ? user.getId() : null);
+		Long memberId = (user != null ? user.getId() : null);
 
+		List<PostListResBody> recommendedPosts = postSearchService.searchPosts(query, memberId);
 
-        List<PostListResBody> recommendedPosts = postSearchService.searchPosts(query, memberId);
+		String answer = postSearchService.searchWithLLM(query, recommendedPosts);
 
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("query", query);
+		result.put("answer", answer);
+		result.put("posts", recommendedPosts);
 
-        String answer = postSearchService.searchWithLLM(query, recommendedPosts);
-
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("query", query);
-        result.put("answer", answer);
-        result.put("posts", recommendedPosts);
-
-        return ResponseEntity.ok(result);
-    }
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "AI 검색 결과입니다.", result));
+	}
 
 }
