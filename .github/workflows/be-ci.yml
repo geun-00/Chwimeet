@@ -155,21 +155,6 @@ jobs:
           java -version
 
       # ========================================
-      # ⭐ DB 초기화: 깨끗한 DB 생성
-      # ========================================
-      - name: Reset database (drop and recreate)
-        run: |
-          echo "🗑️ Dropping existing database..."
-          docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} \
-            -e "DROP DATABASE IF EXISTS chwimeet;"
-          
-          echo "✅ Creating fresh database..."
-          docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} \
-            -e "CREATE DATABASE chwimeet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-          
-          echo "✅ Database reset complete - Flyway will run during JOOQ generation"
-
-      # ========================================
       # 🚀 최적화: Flyway 마이그레이션이 변경된 경우만 JOOQ 재생성
       # ========================================
       - name: Generate JOOQ sources
@@ -184,7 +169,7 @@ jobs:
           echo "SPRING__DATASOURCE__USERNAME=$SPRING__DATASOURCE__USERNAME"
           echo "SPRING__DATASOURCE__URL=$SPRING__DATASOURCE__URL"
           echo ""
-          echo "⚙️ JOOQ will automatically run Flyway migrations first"
+          echo "⚙️  JOOQ plugin will automatically run Flyway migration"
           
           # Run with stacktrace for better error messages
           ./gradlew generateJooqClasses --no-daemon --stacktrace
@@ -200,27 +185,6 @@ jobs:
           echo "=== Verifying tables in database ==="
           docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} -e "USE chwimeet; SHOW TABLES;"
 
-      - name: Verify schema (check for 'e' column bug)
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
-        run: |
-          echo "=== Verifying Review table schema ==="
-          docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} chwimeet \
-            -e "DESCRIBE review;"
-          
-          echo ""
-          echo "=== Checking for problematic 'e' column ==="
-          if docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} chwimeet \
-            -e "SHOW COLUMNS FROM review LIKE 'e';" | grep -q "^e"; then
-            echo "❌ ERROR: Found problematic 'e' column in review table!"
-            echo ""
-            echo "Full table structure:"
-            docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} chwimeet \
-              -e "SHOW CREATE TABLE review;"
-            exit 1
-          fi
-          
-          echo "✅ Schema verified - no 'e' column found"
-
       - name: Skip JOOQ generation (using cache)
         if: steps.cache-jooq.outputs.cache-hit == 'true'
         run: |
@@ -228,7 +192,7 @@ jobs:
           if [ -d "src/generated/com/back/jooq/tables" ]; then
             ls -la src/generated/com/back/jooq/tables/
           else
-            echo "⚠️ Cache exists but files missing - will regenerate"
+            echo "⚠️  Cache exists but files missing - will regenerate"
             exit 1
           fi
 

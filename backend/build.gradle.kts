@@ -106,16 +106,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
-val querydslSrcDir = "src/main/generated"
-
-tasks.clean {
-    delete(file(querydslSrcDir))
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.generatedSourceOutputDirectory.set(file(querydslSrcDir))
-}
-
 tasks.withType<Test> {
     useJUnitPlatform()
 }
