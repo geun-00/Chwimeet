@@ -19,31 +19,43 @@ import java.util.List;
 
 @Entity
 @Getter
-@ToString
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class Reservation extends BaseEntity {
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, name = "status")
     private ReservationStatus status;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "receive_method")
     private ReservationDeliveryMethod receiveMethod;
+    @Column(name = "receive_carrier")
     private String receiveCarrier;
+    @Column(name = "receive_tracking_number")
     private String receiveTrackingNumber;
+    @Column(name = "receive_address1")
     private String receiveAddress1;
+    @Column(name = "receive_address2")
     private String receiveAddress2;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "return_method")
     private ReservationDeliveryMethod returnMethod;
+    @Column(name = "return_carrier")
     private String returnCarrier;
+    @Column(name = "return_tracking_number")
     private String returnTrackingNumber;
 
+    @Column(name = "cancel_reason")
     private String cancelReason;
+    @Column(name = "reject_reason")
     private String rejectReason;
+    @Column(name = "claim_reason")
     private String claimReason;
 
+    @Column(name = "reservation_start_at")
     private LocalDateTime reservationStartAt;
+    @Column(name = "reservation_end_at")
     private LocalDateTime reservationEndAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
