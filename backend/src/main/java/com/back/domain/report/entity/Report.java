@@ -43,7 +43,7 @@ public class Report extends BaseEntity {
         return new Report(targetId, comment, member, ReportType.POST);
     }
 
-    public static Report createUserType(Long targetId, String comment, Member member) {
+    public static Report createMemberType(Long targetId, String comment, Member member) {
         return new Report(targetId, comment, member, ReportType.MEMBER);
     }
 
