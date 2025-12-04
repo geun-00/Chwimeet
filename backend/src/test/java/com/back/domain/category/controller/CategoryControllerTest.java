@@ -1,6 +1,5 @@
 package com.back.domain.category.controller;
 
-import com.back.BaseTestContainer;
 import com.back.config.TestConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,8 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @Import(TestConfig.class)
 @AutoConfigureMockMvc
+@Transactional
 @Sql("/sql/categories.sql")
-class CategoryControllerTest extends BaseTestContainer {
+class CategoryControllerTest {
 
     @Autowired
     MockMvc mockMvc;

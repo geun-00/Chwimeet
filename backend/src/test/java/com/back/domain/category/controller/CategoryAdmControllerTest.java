@@ -1,7 +1,6 @@
 
 package com.back.domain.category.controller;
 
-import com.back.BaseTestContainer;
 import com.back.config.TestConfig;
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
@@ -16,6 +15,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -29,8 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @Import(TestConfig.class)
 @AutoConfigureMockMvc
+@Transactional
 @Sql("/sql/categories.sql")
-class CategoryAdmControllerTest extends BaseTestContainer {
+class CategoryAdmControllerTest {
 
     @Autowired
     MockMvc mockMvc;
