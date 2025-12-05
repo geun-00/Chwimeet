@@ -64,7 +64,7 @@ class PostControllerTest {
 	@Test
 	@DisplayName("내 게시글 조회 테스트")
 	@WithUserDetails("user1@example.com")
-	void getMyPosts_success() throws Exception {
+	void getMyPostList_success() throws Exception {
 
 		mockMvc.perform(get("/api/v1/posts/my")
 				.param("page", "0")
@@ -76,5 +76,19 @@ class PostControllerTest {
 			.andExpect(jsonPath("$.data.content").isArray())
 			.andExpect(jsonPath("$.data.content.length()").value(3));
 
+	}
+
+	@Test
+	@DisplayName("게시글 즐겨찾기 토글 테스트")
+	@WithUserDetails("user1@example.com")
+	void toggleFavorite_success() throws Exception {
+
+		mockMvc.perform(post("/api/v1/posts/favorites/{id}", 4L))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data").value(true));
+
+		mockMvc.perform(post("/api/v1/posts/favorites/{id}", 4L))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data").value(false));
 	}
 }
