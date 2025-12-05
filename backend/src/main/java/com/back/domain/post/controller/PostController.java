@@ -48,7 +48,6 @@ import lombok.RequiredArgsConstructor;
 public class PostController implements PostApi {
 
 	private final PostService postService;
-	private final ReviewSummaryService reviewSummaryService;
 	private final PostSearchService postSearchService;
 	private final PostContentGenerateService postContentGenerateService;
 
@@ -147,13 +146,6 @@ public class PostController implements PostApi {
 		this.postService.deletePost(id, user.getId());
 
 		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 삭제되었습니다."));
-	}
-
-	@GetMapping("/{id}/reviews/summary")
-	public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
-		String body = reviewSummaryService.summarizePostReviews(id);
-
-		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
 	}
 
 	@PostMapping("/gen-detail")

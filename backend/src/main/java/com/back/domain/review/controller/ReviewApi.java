@@ -1,6 +1,7 @@
 package com.back.domain.review.controller;
 
 import com.back.domain.review.dto.ReviewDto;
+import com.back.domain.review.dto.ReviewSummaryDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
@@ -33,4 +34,16 @@ public interface ReviewApi {
             @PathVariable Long memberId,
             @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     );
+
+    @Operation(summary = "게시글 후기 후기 통계 요약 조회 API", description = "특정 게시글의 후기 요약 통계 정보를 조회합니다.")
+    public ResponseEntity<RsData<ReviewSummaryDto>> getPostReviewSummary(@PathVariable Long postId);
+
+    @Operation(summary = "게시글 작성자 후기 통계 요약 조회 API", description = "게시글 작성자의 후기 요약 통계 정보를 조회합니다.")
+    public ResponseEntity<RsData<ReviewSummaryDto>> getMemberReviewSummary(@PathVariable Long postId);
+
+    @Operation(summary = "게시글 후기 AI 요약 API", description = "AI가 특정 게시글의 후기 목록을 요약합니다.")
+    ResponseEntity<RsData<String>> summarizePostReviews(@PathVariable Long postId);
+
+    @Operation(summary = "게시글 작성자 후기 AI 요약 API", description = "AI가 게시글 작성자의 후기 목록을 요약합니다.")
+    ResponseEntity<RsData<String>> summarizeMemberReviews(@PathVariable Long memberId);
 }

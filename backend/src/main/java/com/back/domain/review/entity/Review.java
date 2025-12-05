@@ -17,15 +17,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Review extends BaseEntity {
-    @Column(nullable = false)
+
+    @Column(name="equipment_score", nullable = false)
     private int equipmentScore;
-    @Column(nullable = false)
+
+    @Column(name="kindness_score", nullable = false)
     private int kindnessScore;
-    @Column(nullable = false)
+
+    @Column(name="response_time_score",nullable = false)
     private int responseTimeScore;
-    @Column(nullable = false)
+
+    @Column(name="comment",nullable = false)
     private String comment;
-    @Column(nullable = false)
+
+    @Column(name="is_banned",nullable = false)
     private boolean isBanned;
 
     @OneToOne

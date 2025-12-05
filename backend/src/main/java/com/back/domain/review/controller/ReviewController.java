@@ -4,6 +4,7 @@ import com.back.domain.review.dto.ReviewDto;
 import com.back.domain.review.dto.ReviewSummaryDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
 import com.back.domain.review.service.ReviewService;
+import com.back.domain.review.service.ReviewSummaryService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
@@ -21,12 +22,13 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class ReviewController implements ReviewApi {
     private final ReviewService reviewService;
+    private final ReviewSummaryService reviewSummaryService;
 
-    @PostMapping("/api/v1/reviews/{reservationId}")
+    @PostMapping("/reviews/{reservationId}")
     public ResponseEntity<RsData<ReviewDto>> write(
             @PathVariable Long reservationId,
             @Valid @RequestBody ReviewWriteReqBody reqBody,
@@ -37,7 +39,7 @@ public class ReviewController implements ReviewApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
-    @GetMapping("/api/v1/posts/{postId}/reviews")
+    @GetMapping("/posts/{postId}/reviews")
     public ResponseEntity<RsData<PagePayload<ReviewDto>>> getPostReviews(
             @PathVariable Long postId,
             @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
@@ -47,7 +49,7 @@ public class ReviewController implements ReviewApi {
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping("/api/v1/members/{memberId}/reviews")
+    @GetMapping("/members/{memberId}/reviews")
     public ResponseEntity<RsData<PagePayload<ReviewDto>>> getMemberReviews(
             @PathVariable Long memberId,
             @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
@@ -57,8 +59,8 @@ public class ReviewController implements ReviewApi {
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping("/api/v1/posts/{postId}/review-summary")
-    public ResponseEntity<RsData<ReviewSummaryDto>> getPostReviewSummary2(
+    @GetMapping("/posts/{postId}/reviews/summary")
+    public ResponseEntity<RsData<ReviewSummaryDto>> getPostReviewSummary(
             @PathVariable Long postId
     ){
         ReviewSummaryDto reviewSummaryDto = reviewService.findPostReceivedReviewSummary2(postId);
@@ -66,12 +68,26 @@ public class ReviewController implements ReviewApi {
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping("/api/v1/members/{memberId}/review-summary")
-    public ResponseEntity<RsData<ReviewSummaryDto>> getMemberReviewSummary2(
+    @GetMapping("/members/{memberId}/reviews/summary")
+    public ResponseEntity<RsData<ReviewSummaryDto>> getMemberReviewSummary(
             @PathVariable Long memberId
     ){
         ReviewSummaryDto reviewSummaryDto = reviewService.findMemberReceivedReviewSummary2(memberId);
         RsData<ReviewSummaryDto> body = new RsData<>(HttpStatus.OK, "성공", reviewSummaryDto);
         return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/posts/{id}/reviews/summary/ai")
+    public ResponseEntity<RsData<String>> summarizePostReviews(@PathVariable Long id) {
+        String body = reviewSummaryService.summarizePostReviews(id);
+
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
+    }
+
+    @GetMapping("/members/{id}/reviews/summary/ai")
+    public ResponseEntity<RsData<String>> summarizeMemberReviews(@PathVariable Long id) {
+        String body = reviewSummaryService.summarizeMemberReviews(id);
+
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
     }
 }

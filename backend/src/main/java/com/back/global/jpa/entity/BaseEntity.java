@@ -12,11 +12,17 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @Getter
 public class BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
     @CreatedDate
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
     @LastModifiedDate
+    @Column(name = "modified_at")
     private LocalDateTime modifiedAt;
 }

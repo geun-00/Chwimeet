@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class MemberControllerTest {
-    
+
     @MockitoBean
     private MemberService memberService;
 
@@ -74,7 +74,7 @@ class MemberControllerTest {
         testMember = member;
 
         when(memberService.join(any(MemberJoinReqBody.class))).thenReturn(testMember);
-        
+
         // Mock CookieHelper의 기본 동작 설정
         when(cookieHelper.getCookieValue(anyString(), anyString())).thenReturn("");
     }
