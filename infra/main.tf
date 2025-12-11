@@ -291,7 +291,10 @@ docker run -d \
   -p 9090:9090 \
   -e TZ=Asia/Seoul \
   -v /dockerProjects/prometheus_1/volumes/etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
-  prom/prometheus
+  prom/prometheus \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --web.enable-remote-write-receiver \
+  --enable-feature=native-histograms
 
 # Grafana 설치
 docker run -d \
