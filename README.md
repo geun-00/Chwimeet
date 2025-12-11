@@ -1,7 +1,7 @@
 # CHWIMEET
 
 <div align="center">
-  <h1> 로고 </h1>
+<img width="500" height="440" alt="취밋로고" src="https://github.com/user-attachments/assets/e9b2a843-b5a8-44ec-adbf-03d8adf6a775" />
 
   <p> <strong>취밋</strong>은 일상에서 잠깐 필요한 물건을<br />
     가까운 사람들과 쉽게 빌리고 빌려줄 수 있는 P2P 대여 플랫폼입니다.<br /> 
