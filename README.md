@@ -737,6 +737,96 @@ public record NotificationResBody<T extends NotificationData>(
 
 </details>
 
+<details>
+<summary><strong>✨ AI 활용 이미지 기반 게시글 내용 생성 </strong></summary>
+
+### AI 기반 게시글 자동 생성 기능 설계 및 구현
+
+이미지와 간단한 사용자 입력만으로 **P2P 대여 게시글을 자동 생성**하는 기능을 구현했습니다.  
+이 기능은 이미지 최적화 → AI 프롬프트 구성 → 구조화된 JSON 응답 파싱의 흐름으로 동작합니다.
+
+---
+
+### 이미지 최적화
+
+AI 요청 비용과 응답 품질을 동시에 고려해 **이미지 사전 최적화 로직**을 적용했습니다.
+
+#### ✔ 핵심 전략
+- 최대 10장까지만 처리하여 과도한 토큰/용량 사용 방지
+- 해상도 최대 1024px로 제한하여 입력 픽셀 수를 줄이고 분석 속도 향상
+- JPEG(85%) 압축을 통해 분석 품질 손실 없이 전송 비용과 처리 시간을 최소화
+- 압축 후 용량이 더 클 경우 **원본 이미지 유지**
+
+---
+
+### 프롬프트 동적 구성
+
+```java
+String userPrompt = defaultUserPrompt
+    .replace("{categoriesJson}", categoriesJson)
+    .replace("{additionalInfo}", additionalInfo == null ? "" : additionalInfo);
+```
+
+AI가 **허용된 카테고리 범위 내에서만 응답**하도록 하기위해
+DB에서 실제 사용중인 카테고리를 조회하여 **프롬프트에 동적으로 주입**했습니다.
+또한 사용자가 이미지 외의 추가 정보를 텍스트로 입력할 수 있도록 구성했습니다.
+
+---
+
+### System / User Prompt 분리 설계
+
+System / User 프롬프트를 분리하여
+AI 게시글 생성을 **정책 기반 + 컨텍스트 기반 구조**로 설계했습니다.
+
+#### ✔ System Prompt (고정 규칙)
+- AI의 역할 정의
+- 이미지 분석 기준 및 콘텐츠 작성 가이드라인
+- 가격 및 보증금 산정 규칙
+- 옵션 판별 기준
+- JSON 출력 포맷 강제 및 정책 제약
+
+-> AI의 행동을 정책 레벨에서 통제
+
+#### ✔ User Prompt (동적 입력)
+- DB 기반 카테고리 목록을 JSON 형태로 동적 주입
+- 사용자 입력 추가 정보 컨텍스트 주입
+
+-> 서비스 상태와 사용자 의도를 실시간 반영
+
+#### ✔ 설계 효과
+- 프롬프트 인젝션 및 규칙 오염 방지
+- 정책 변경 시 System Prompt만 수정
+- AI 응답 포맷의 예측 가능성 확보
+- 하드코딩 없는 런타임 기반 프롬프트 구성
+
+---
+
+### 멀티모달 기반 AI 요청 (텍스트 + 이미지)
+
+```java
+GenPostDetailResBody resBody = chatClient.prompt()
+        .system(systemPrompt)
+        .user(user -> {
+            user.text(userPrompt);
+            for (Resource image : optimizedImages) {
+              user.media(MediaType.IMAGE_JPEG, image);
+            }
+        })
+        .call()
+        .entity(GenPostDetailResBody.class);
+```
+
+**텍스트와 이미지를 함께 이해할 수 있는 AI 모델**을 활용하여,
+이미지 분석 결과와 사용자 추가 정보를 하나의 컨텍스트로 결합하고,
+카테고리, 가격, 옵션을 포함한 **구조화된 게시글 데이터**를 생성합니다.
+
+AI 응답을 **사전에 정의한 JSON 스키마로 엄격히 제한**하고,
+Spring AI의 DTO 매핑 기능을 통해 **즉시 역직렬화** 하도록 설계했습니다.
+이를 통해 응답 형식이 일치하지 않을 경우 **파싱 단계에서 즉시 예외가 발생**하도록 하여,
+별도의 파싱 로직 없이도 서비스 레이어에서 **안전하게 바로 활용**할 수 있습니다.
+
+</details>
+
 # 🔥 트러블 슈팅
 
 <details>
