@@ -22,6 +22,13 @@
 
 <br>
 
+## 🏆 프로젝트 성과
+![운영진 평가 1위](https://img.shields.io/badge/운영진%20평가-1위-gold)
+![참여기업 평가 1위](https://img.shields.io/badge/참여기업%20평가-1위-gold)
+![교육생 평가 2위](https://img.shields.io/badge/교육생%20평가-2위-silver)
+
+<br>
+
 #  📖 목차
 
 1. [🧑‍💻 팀 소개](#-팀-소개-—-일단-진행해-팀)
