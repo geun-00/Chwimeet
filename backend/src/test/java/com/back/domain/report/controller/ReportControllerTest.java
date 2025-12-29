@@ -1,6 +1,7 @@
 package com.back.domain.report.controller;
 
 import com.back.BaseContainerIntegrationTest;
+import com.back.IntegrationTestSupport;
 import com.back.domain.member.entity.Member;
 import com.back.domain.report.common.ReportType;
 import com.back.domain.report.dto.ReportReqBody;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Sql("/sql/report/report.sql")
-class ReportControllerTest extends BaseContainerIntegrationTest {
+class ReportControllerTest extends IntegrationTestSupport {
 
     @Autowired EntityManager em;
     @Autowired ReportRepository reportRepository;

@@ -1,6 +1,7 @@
 package com.back.domain.report.controller;
 
 import com.back.BaseContainerIntegrationTest;
+import com.back.IntegrationTestSupport;
 import com.back.domain.report.repository.ReportRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Sql("/sql/report/report_admin.sql")
-class ReportAdminControllerTest extends BaseContainerIntegrationTest {
+class ReportAdminControllerTest extends IntegrationTestSupport {
 
     @Autowired ReportRepository reportRepository;
 
