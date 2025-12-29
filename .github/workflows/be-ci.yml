@@ -1,12 +1,9 @@
 name: be-ci
 
 on:
-  pull_request:
-    paths:
-      - "backend/**"
-      - ".github/workflows/be-ci.yml"
   push:
-    branches: ["dev", "feat/**"]
+    branches:
+      - main
     paths:
       - "backend/**"
       - ".github/workflows/be-ci.yml"
