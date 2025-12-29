@@ -566,21 +566,11 @@ data "aws_ami" "latest-amazon-linux" {
   }
 }
 
-// Elastic IP 생성
-resource "aws_eip" "eip-team1" {
-  domain = "vpc"
-
-  tags = {
-    Name = "${var.prefix}-eip" // ${var.prefix}-eip
-    Team = var.team_tag_value
-  }
-}
-
 // EC2 인스턴스 생성
 resource "aws_instance" "ec2-team1" {
   ami                         = data.aws_ami.latest-amazon-linux.id
   instance_type               = "t3.small"
-  key_name                    = var.key_name
+  # key_name                    = var.key_name
   subnet_id                   = aws_subnet.subnet-team1-a.id
   vpc_security_group_ids      = [aws_security_group.sg-team1.id]
   associate_public_ip_address = true
@@ -602,12 +592,6 @@ EOF
 
   # CloudFront를 먼저 생성한 후 EC2 생성 (user_data에서 CloudFront 도메인 사용)
   depends_on = [aws_cloudfront_distribution.this]
-}
-
-// Elastic IP를 EC2 인스턴스에 연결
-resource "aws_eip_association" "eip-assoc-team1" {
-  instance_id   = aws_instance.ec2-team1.id
-  allocation_id = aws_eip.eip-team1.id
 }
 
 # --- 4. S3 Bucket (image uploads) ---
@@ -958,6 +942,6 @@ output "post_lambda_function_name" {
 }
 
 output "public_ip" {
-  value       = aws_eip.eip-team1.public_ip
+  value       = aws_instance.ec2-team1.public_ip
   description = "EC2 Public IP"
 }
