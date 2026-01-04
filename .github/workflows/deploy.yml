@@ -283,6 +283,11 @@ jobs:
             echo "🎨 role -> blue(now): ${BLUE}, green(next): ${GREEN}"
 
             docker rm -f "${GREEN}" >/dev/null 2>&1 || true
+            
+            # 로그 디렉토리 생성 (호스트)
+            mkdir -p /home/ec2-user/logs/${GREEN}
+            chmod 777 /home/ec2-user/logs/${GREEN}
+            
             echo "🚀 run new container → ${GREEN}"          
             docker run -d --name "${GREEN}" \
               --restart unless-stopped \

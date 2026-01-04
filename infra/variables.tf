@@ -15,7 +15,7 @@ variable "team_tag_value" { // 팀 태그 값 추가
 
 variable "app_1_domain" {
   description = "app_1 domain"
-  default     = "chwimeet-fe.vercel.app"
+  default     = "chwimeet.jgy914.shop"
 }
 
 variable "key_name" {
