@@ -92,7 +92,7 @@ jobs:
       - name: 도커 빌드 및 푸시
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: ./backend
           push: true
           cache-from: type=registry,ref=ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:cache
           cache-to: type=registry,ref=ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:cache,mode=max
