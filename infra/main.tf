@@ -279,6 +279,11 @@ until docker exec mariadb mariadb -uroot -p${var.password_1} -e "SELECT 1" &> /d
 done
 echo "MariaDB가 준비됨."
 
+# prometheus 데이터 디렉토리 생성 및 권한 설정
+mkdir -p /home/ec2-user/prometheus-data
+chown -R 1000:1000 /home/ec2-user/prometheus-data
+chown 1000:1000 /home/ec2-user/targets.json
+
 # Prometheus 설치
 docker run -d \
   --name prometheus \
