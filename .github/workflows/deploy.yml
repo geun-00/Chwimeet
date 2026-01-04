@@ -35,6 +35,7 @@ permissions:
 # 기본 셸
 defaults:
   run:
+    working-directory: backend
     shell: bash
 
 jobs:
@@ -66,6 +67,66 @@ jobs:
           body: ${{ steps.create_tag.outputs.changelog }}
           draft: false
           prerelease: false
+
+  # ---------------------------------------------------------
+  # Jooq 클래스 생성
+  # ---------------------------------------------------------
+  generateJooq:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      SPRING_PROFILES_ACTIVE: test
+      # ✅ JOOQ 생성용 환경변수
+      SPRING__DATASOURCE__USERNAME: root
+      SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+      SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
+    steps:
+      - name: Cache JOOQ generated sources
+        id: cache-jooq
+        uses: actions/cache@v4
+        with:
+          path: backend/src/generated
+          key: jooq-${{ hashFiles('backend/src/main/resources/db/migration/*.sql', 'backend/build.gradle.kts') }}
+          restore-keys: |
+            jooq-
+      - name: Generate JOOQ sources
+        if: steps.cache-jooq.outputs.cache-hit != 'true'
+        env:
+          SPRING__DATASOURCE__USERNAME: root
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
+        run: |
+          echo "=== Starting JOOQ Generation ==="
+          echo "Checking environment variables (masked):"
+          echo "SPRING__DATASOURCE__USERNAME=$SPRING__DATASOURCE__USERNAME"
+          echo "SPRING__DATASOURCE__URL=$SPRING__DATASOURCE__URL"
+          echo ""
+          echo "⚙️  JOOQ plugin will automatically run Flyway migration"
+          
+          # Run with stacktrace for better error messages
+          ./gradlew generateJooqClasses --no-daemon --stacktrace
+          
+          if [ -d "src/generated/com/back/jooq/tables" ]; then
+            echo "✅ JOOQ generated successfully"
+            ls -la src/generated/com/back/jooq/tables/
+          else
+            echo "❌ JOOQ generation failed"
+            exit 1
+          fi
+          
+          echo "=== Verifying tables in database ==="
+          docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} -e "USE chwimeet; SHOW TABLES;"
+
+      - name: Skip JOOQ generation (using cache)
+        if: steps.cache-jooq.outputs.cache-hit == 'true'
+        run: |
+          echo "⚡ JOOQ generation skipped (using cached sources)"
+          if [ -d "src/generated/com/back/jooq/tables" ]; then
+            ls -la src/generated/com/back/jooq/tables/
+          else
+            echo "⚠️  Cache exists but files missing - will regenerate"
+            exit 1
+          fi
 
   # ---------------------------------------------------------
   # 2) 도커 이미지 빌드/푸시 (캐시 최대 활용)
