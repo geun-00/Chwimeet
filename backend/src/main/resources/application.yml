@@ -118,6 +118,9 @@ cloud:
       domain: ${CLOUD__AWS__CLOUDFRONT__DOMAIN}
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
