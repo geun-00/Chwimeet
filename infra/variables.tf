@@ -5,7 +5,7 @@ variable "region" {
 
 variable "prefix" {
   description = "Prefix for all resources"
-  default     = "chwimmet"
+  default     = "chwimeet"
 }
 
 variable "team_tag_value" { // 팀 태그 값 추가
@@ -21,4 +21,10 @@ variable "app_1_domain" {
 variable "key_name" {
   description = "EC2 Key Pair name"
   default     = "chwimeet_key" // 사용할 키페어 이름
+}
+
+variable "app_env" {
+  description = ".env file contents"
+  type        = string
+  default   = ""
 }
