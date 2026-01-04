@@ -294,6 +294,7 @@ jobs:
               --network "${NET}" \
               -e TZ=Asia/Seoul \
               --env-file /home/ec2-user/.env \
+              -v /home/ec2-user/logs/${GREEN}:/app/logs \
               "${IMAGE}"
 
             echo "⏱ health-check: ${GREEN}"
