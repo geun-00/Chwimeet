@@ -5,16 +5,16 @@ name: deploy
 # =========================
 env:
   OWNER_LC: chwimeet
-  IMAGE_REPOSITORY: chwimeet-backend         # GHCR 이미지 리포지토리명(소유자 포함 X)
-  CONTAINER_1_NAME: app-container-1        # 슬롯1(고정 이름)
-  CONTAINER_2_NAME: app-container-2        # 슬롯2(고정 이름)
-  CONTAINER_PORT: 8080                     # 컨테이너 내부 포트(스프링부트)
-  EC2_INSTANCE_TAG_NAME: chwimeet-backend         # 배포 대상 EC2 Name 태그
-  DOCKER_NETWORK: common                   # 도커 네트워크
+  IMAGE_REPOSITORY: chwimeet-backend
+  CONTAINER_1_NAME: app-container-1
+  CONTAINER_2_NAME: app-container-2
+  CONTAINER_PORT: 8080
+  EC2_INSTANCE_TAG_NAME: chwimeet-backend
+  DOCKER_NETWORK: common
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }} # 커밋이 짧은 시간안에 몰려도 최신 커밋에 대해서만 액션이 수행되도록
-  cancel-in-progress: false                       # 기존에 시작된 작업은 새 커밋이 들어왔다고 해서 바로 끄지 않고 끝날때까지 대기
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 on:
   push:
@@ -27,15 +27,12 @@ on:
     branches:
       - main
 
-# 권한 최소화/명시화
 permissions:
-  contents: write # 태그/릴리즈
-  packages: write # GHCR 푸시
+  contents: write
+  packages: write
 
-# 기본 셸
 defaults:
   run:
-    working-directory: backend
     shell: bash
 
 jobs:
@@ -45,18 +42,16 @@ jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.create_tag.outputs.new_tag }} # 이후 잡에서 사용할 태그명
+      tag_name: ${{ steps.create_tag.outputs.new_tag }}
     steps:
       - uses: actions/checkout@v4
 
-      # 버전 태그 자동 생성 (vX.Y.Z)
       - name: Create Tag
         id: create_tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 릴리즈 생성
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -69,7 +64,7 @@ jobs:
           prerelease: false
 
   # ---------------------------------------------------------
-  # Jooq 클래스 생성
+  # 2) JOOQ 클래스 생성
   # ---------------------------------------------------------
   generateJooq:
     runs-on: ubuntu-latest
@@ -83,31 +78,20 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
-    env:
-      CI: true
-      SPRING_PROFILES_ACTIVE: test
-      SPRING__DATASOURCE__USERNAME: root
-      SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
-      SPRING__DATASOURCE__URL: jdbc:mariadb://127.0.0.1:3306/chwimeet
-
     steps:
-      # 1. 코드 체크아웃
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Java 설치
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Gradle wrapper 실행 권한 부여
       - name: Grant execute permission for gradlew
         working-directory: backend
         run: chmod +x gradlew
 
-      # 4. JOOQ 캐시 확인
       - name: Cache JOOQ generated sources
         id: cache-jooq
         uses: actions/cache@v4
@@ -117,19 +101,19 @@ jobs:
           restore-keys: |
             jooq-
 
-      # 5. JOOQ 생성 (캐시 미스 시)
       - name: Generate JOOQ sources
         if: steps.cache-jooq.outputs.cache-hit != 'true'
         working-directory: backend
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING__DATASOURCE__USERNAME: root
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SPRING__DATASOURCE__URL: jdbc:mariadb://127.0.0.1:3306/chwimeet
         run: |
           echo "=== Starting JOOQ Generation ==="
-          echo "Checking environment variables (masked):"
-          echo "SPRING__DATASOURCE__USERNAME=$SPRING__DATASOURCE__USERNAME"
           echo "SPRING__DATASOURCE__URL=$SPRING__DATASOURCE__URL"
-          echo ""
           echo "⚙️  JOOQ plugin will automatically run Flyway migration"
           
-          # Run with stacktrace for better error messages
           ./gradlew generateJooqClasses --no-daemon --stacktrace
           
           if [ -d "src/generated/com/back/jooq/tables" ]; then
@@ -140,40 +124,50 @@ jobs:
             exit 1
           fi
 
-      # 6. 캐시 히트 시 로그
       - name: Skip JOOQ generation (using cache)
         if: steps.cache-jooq.outputs.cache-hit == 'true'
         run: |
           echo "⚡ JOOQ generation skipped (using cached sources)"
-          if [ -d "src/generated/com/back/jooq/tables" ]; then
-            ls -la src/generated/com/back/jooq/tables/
-          else
-            echo "⚠️  Cache exists but files missing - will regenerate"
+          ls -la backend/src/generated/com/back/jooq/tables/ || {
+            echo "⚠️  Cache corrupt - regenerating"
             exit 1
-          fi
+          }
+
+      # 항상 아티팩트 업로드 (캐시에서 복원한 경우도 포함)
+      - name: Upload JOOQ generated sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: jooq-generated-sources
+          path: backend/src/generated
+          retention-days: 1
+          if-no-files-found: error
 
   # ---------------------------------------------------------
-  # 2) 도커 이미지 빌드/푸시
+  # 3) 도커 이미지 빌드/푸시
   # ---------------------------------------------------------
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
-    needs: [makeTagAndRelease, generateJooq]  # ← generateJooq 의존성 추가
+    needs: [makeTagAndRelease, generateJooq]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # JOOQ 생성 파일 다운로드
       - name: Download JOOQ generated sources
         uses: actions/download-artifact@v4
         with:
           name: jooq-generated-sources
           path: backend/src/generated
 
-      # 다운로드 확인
       - name: Verify JOOQ sources
         run: |
-          echo "📦 Downloaded JOOQ sources:"
-          ls -la backend/src/generated/com/back/jooq/tables/ || echo "⚠️  JOOQ tables not found"
+          echo "📦 Verifying JOOQ sources:"
+          if [ -d "backend/src/generated/com/back/jooq/tables" ]; then
+            echo "✅ JOOQ sources found"
+            ls -la backend/src/generated/com/back/jooq/tables/
+          else
+            echo "❌ JOOQ sources missing!"
+            exit 1
+          fi
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
@@ -203,24 +197,19 @@ jobs:
             ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:latest
 
   # ---------------------------------------------------------
-  # 3) Blue/Green 무중단 배포 (EC2 + NPM 스위치)
+  # 4) Blue/Green 무중단 배포
   # ---------------------------------------------------------
   deploy:
     name: Blue/Green 무중단 배포
     runs-on: ubuntu-latest
     needs: [makeTagAndRelease, buildImageAndPush]
-    env:
-      DOCKER_IMAGE_NAME: ${{ needs.buildImageAndPush.outputs.DOCKER_IMAGE_NAME }}
-      OWNER_LC: ${{ needs.buildImageAndPush.outputs.OWNER_LC }}
     steps:
-      # AWS 자격 구성
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # EC2 인스턴스 조회
       - name: EC2 인스턴스 ID 가져오기
         id: get_instance_id
         run: |
@@ -229,7 +218,6 @@ jobs:
             --query "Reservations[].Instances[].InstanceId" --output text)
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
-      # 원격(SSM)으로 Blue/Green 스위치 수행
       - name: EC2에 명령어 실행 (SSM)
         uses: peterkimzz/aws-ssm-send-command@master
         with:
@@ -240,27 +228,18 @@ jobs:
           working-directory: /
           comment: Deploy
           command: |
-            # Base64로 전달된 Secrets 디코딩 후 .env 생성
             echo "${{ secrets.APP_ENV }}" | base64 --decode > /home/ec2-user/.env
             chmod 600 /home/ec2-user/.env
             
             set -Eeuo pipefail
 
-            # ---------------------------------------------------------
-            # 0) 실행 로그(라인 타임스탬프 부착)
-            # ---------------------------------------------------------
             LOG="/tmp/ssm-$(date +%Y%m%d_%H%M%S).log"
             exec > >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG")
             exec 2> >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG" >&2)
 
-            # ---------------------------------------------------------
-            # 1) 변수 정의
-            #    - 슬롯 이름은 고정(두 개의 컨테이너 이름)
-            #    - blue/green은 "역할"이며 매 배포마다 바뀜
-            # ---------------------------------------------------------
-            source /etc/environment || true   # 시스템 전역 변수(+ 비밀) 주입 시도
+            source /etc/environment || true
             OWNER_LC="${{ github.repository_owner }}"
-            OWNER_LC="${OWNER_LC,,}"                                # 소문자 표준화
+            OWNER_LC="${OWNER_LC,,}"
             IMAGE_TAG="${{ needs.makeTagAndRelease.outputs.tag_name }}"
             IMAGE_REPOSITORY="${{ env.IMAGE_REPOSITORY }}"
             IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_REPOSITORY}:${IMAGE_TAG}"
@@ -272,37 +251,25 @@ jobs:
             echo "🔹 Use image: ${IMAGE}"
             docker pull "${IMAGE}"
 
-            # ---------------------------------------------------------
-            # 2) Nginx Proxy Manager(NPM) API 토큰 발급
-            #     - /etc/environment 등에 설정된 NPM_ADMIN_EMAIL, NPM_ADMIN_PASSWORD 사용 가정
-            # ---------------------------------------------------------
             TOKEN=$(curl -s -X POST http://127.0.0.1:81/api/tokens \
               -H "Content-Type: application/json" \
               -d "{\"identity\": \"${NPM_ADMIN_EMAIL:-}\", \"secret\": \"${NPM_ADMIN_PASSWORD:-}\"}" | jq -r '.token')
 
-            # 토큰/도메인 검증(없으면 실패)
             [[ -n "${TOKEN}" && "${TOKEN}" != "null" ]] || { echo "NPM token issue failed"; exit 1; }
             [[ -n "${APP_1_DOMAIN:-}" ]] || { echo "APP_1_DOMAIN is empty"; exit 1; }
 
-            # 대상 프록시 호스트 ID 조회(도메인 매칭)
             PROXY_ID=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts" \
               -H "Authorization: Bearer ${TOKEN}" \
               | jq ".[] | select(.domain_names[]==\"${APP_1_DOMAIN}\") | .id")
 
             [[ -n "${PROXY_ID}" && "${PROXY_ID}" != "null" ]] || { echo "Proxy host not found for ${APP_1_DOMAIN}"; exit 1; }
 
-            # 현재 프록시가 바라보는 업스트림(컨테이너명) 조회
             CURRENT_HOST=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts/${PROXY_ID}" \
               -H "Authorization: Bearer ${TOKEN}" \
               | jq -r '.forward_host')
 
             echo "🔎 CURRENT_HOST: ${CURRENT_HOST:-none}"
 
-            # ---------------------------------------------------------
-            # 3) 역할(blue/green) 판정
-            #    - blue : 현재 운영 중(CURRENT_HOST)
-            #    - green: 다음 운영(교체 대상)
-            # ---------------------------------------------------------
             if [[ "${CURRENT_HOST:-}" == "${SLOT1}" ]]; then
               BLUE="${SLOT1}"
               GREEN="${SLOT2}"
@@ -310,15 +277,11 @@ jobs:
               BLUE="${SLOT2}"
               GREEN="${SLOT1}"
             else
-              BLUE="none"   # 초기 배포
+              BLUE="none"
               GREEN="${SLOT1}"
             fi
             echo "🎨 role -> blue(now): ${BLUE}, green(next): ${GREEN}"
 
-            # ---------------------------------------------------------
-            # 4) green 역할 컨테이너 재기동
-            #    - 같은 네트워크 상에서 NPM이 컨테이너명:PORT로 프록시하므로 -p 불필요
-            # ---------------------------------------------------------
             docker rm -f "${GREEN}" >/dev/null 2>&1 || true
             echo "🚀 run new container → ${GREEN}"          
             docker run -d --name "${GREEN}" \
@@ -328,14 +291,11 @@ jobs:
               --env-file /home/ec2-user/.env \
               "${IMAGE}"
 
-            # ---------------------------------------------------------
-            # 5) 헬스체크 (/actuator/health 200 OK까지 대기)
-            # ---------------------------------------------------------
             echo "⏱ health-check: ${GREEN}"
             TIMEOUT=120
             INTERVAL=3
             ELAPSED=0
-            sleep 8  # 초기 부팅 여유
+            sleep 8
 
             while (( ELAPSED < TIMEOUT )); do
               CODE=$(docker exec "${GREEN}" curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT_IN}/actuator/health" || echo 000)
@@ -345,9 +305,6 @@ jobs:
             done
             [[ "${CODE:-000}" == "200" ]] || { echo "❌ ${GREEN} health failed"; docker logs --tail=200 "${GREEN}" || true; docker rm -f "${GREEN}" || true; exit 1; }
 
-            # ---------------------------------------------------------
-            # 6) 업스트림 전환 (forward_host/forward_port만 업데이트)
-            # ---------------------------------------------------------
             NEW_CFG=$(jq -n --arg host "${GREEN}" --argjson port ${PORT_IN} '{forward_host:$host, forward_port:$port}')
             curl -s -X PUT "http://127.0.0.1:81/api/nginx/proxy-hosts/${PROXY_ID}" \
               -H "Authorization: Bearer ${TOKEN}" \
@@ -355,26 +312,16 @@ jobs:
               -d "${NEW_CFG}" >/dev/null
             echo "🔁 switch upstream → ${GREEN}:${PORT_IN}"
             
-            # ---------------------------------------------------------
-            # 6.5) Prometheus 타겟 업데이트
-            # ---------------------------------------------------------
             echo '[{"targets":["'${SLOT1}':'${PORT_IN}'","'${SLOT2}':'${PORT_IN}'"],"labels":{}}]' > /home/ec2-user/targets.json
             chown 1000:1000 /home/ec2-user/targets.json
             echo "📊 Prometheus targets updated"
 
-            # ---------------------------------------------------------
-            # 7) 이전 blue 종료(최초 배포면 생략)
-            # ---------------------------------------------------------
             if [[ "${BLUE}" != "none" ]]; then
               docker stop "${BLUE}" >/dev/null 2>&1 || true
               docker rm "${BLUE}" >/dev/null 2>&1 || true
               echo "🧹 removed old blue: ${BLUE}"
             fi
 
-            # ---------------------------------------------------------
-            # 8) 이미지 정리(현재 태그/ latest 제외) - 결과 없음도 오류 아님
-            #     - pipefail과 grep의 종료코드(1)를 고려해 블록 전체에 || true 적용
-            # ---------------------------------------------------------
             {
               docker images --format '{{.Repository}}:{{.Tag}}' \
                 | grep -F "ghcr.io/${OWNER_LC}/${IMAGE_REPOSITORY}:" \
