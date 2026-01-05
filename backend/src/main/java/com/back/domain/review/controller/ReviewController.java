@@ -77,7 +77,7 @@ public class ReviewController implements ReviewApi {
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping("/posts/{id}/reviews/summary/ai-2")
+    @GetMapping("/posts/{id}/reviews/summary/ai")
     public ResponseEntity<RsData<String>> summarizePostReviews(@PathVariable Long id) {
         String body = reviewSummaryService.summarizePostReviews(id);
 
