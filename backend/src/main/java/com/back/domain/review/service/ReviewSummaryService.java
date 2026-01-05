@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,7 +35,79 @@ public class ReviewSummaryService {
     @Value("${custom.ai.author-review-summary-prompt}")
     private String authorReviewSummaryPrompt;
 
-    public String summarizePostReviews(Long postId) {
+    public ResponseEntity<String> summarizePostReviews(Long postId) {
+        String lockKey = "lock:postReviewSummary:" + postId;
+        RLock lock = redissonClient.getLock(lockKey);
+
+        long startTime = System.currentTimeMillis();
+
+        String cachedSummary = getCachedSummary(postId);
+        if (cachedSummary != null) {
+            log.info("캐시 히트 (락 전): postId={}", postId);
+            return ResponseEntity.ok()
+                                 .header("X-Cache-Status", "HIT")
+                                 .header("X-Cache-Source", "BEFORE_LOCK")
+                                 .body(cachedSummary);
+        }
+
+        try {
+            boolean lockAcquired = lock.tryLock(15, 20, TimeUnit.SECONDS);
+            long lockWaitTime = System.currentTimeMillis() - startTime;
+
+            if (!lockAcquired) {
+                log.error("락 획득 실패: postId={}", postId);
+                throw new RuntimeException("락 획득 실패");
+            }
+
+            log.info("{} 락 획득! (대기시간: {}ms)", lockKey, lockWaitTime);
+
+            cachedSummary = getCachedSummary(postId);
+            if (cachedSummary != null) {
+                log.info("캐시 히트 (락 후): postId={} - 다른 스레드가 생성함", postId);
+                return ResponseEntity.ok()
+                                     .header("X-Cache-Status", "HIT")
+                                     .header("X-Cache-Source", "AFTER_LOCK")
+                                     .header("X-Lock-Wait-Time", String.valueOf(lockWaitTime))
+                                     .body(cachedSummary);
+            }
+
+            log.info("캐시 미스 - LLM 호출: postId={}", postId);
+            List<Review> reviews = reviewQueryRepository.findTop30ByPostId(postId);
+
+            if (reviews.isEmpty()) {
+                cachedSummary = "후기가 없습니다.";
+            } else {
+                String reviewsText = reviews.stream()
+                                            .map(Review::getComment)
+                                            .collect(Collectors.joining("\n"));
+
+                cachedSummary = chatClient.prompt()
+                                          .system(reviewSummaryPrompt)
+                                          .user("후기:\n" + reviewsText)
+                                          .call()
+                                          .content();
+            }
+
+            Objects.requireNonNull(cacheManager.getCache("postReviewSummary")).put(postId, cachedSummary);
+            log.info("캐싱 완료: postId={}", postId);
+
+            return ResponseEntity.ok()
+                                 .header("X-Cache-Status", "MISS")
+                                 .header("X-Cache-Source", "LLM_GENERATED")
+                                 .body(cachedSummary);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("락 획득 중 인터럽트", e);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.info("{} 락 해제", lockKey);
+            }
+        }
+    }
+
+    public String summarizePostReviews2(Long postId) {
         String lockKey = "lock:postReviewSummary:" + postId;
         RLock lock = redissonClient.getLock(lockKey);
 
