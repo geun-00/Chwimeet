@@ -41,8 +41,6 @@ public class ReviewSummaryService {
         String lockKey = "lock:postReviewSummary:" + postId;
         RLock lock = redissonClient.getLock(lockKey);
 
-        long startTime = System.currentTimeMillis();
-
         String cachedSummary = getCachedSummary(postId);
 
         if (cachedSummary != null) {
@@ -52,7 +50,6 @@ public class ReviewSummaryService {
                     "hit_type", "immediate"
             ).increment();
 
-            recordResponseTime(startTime, "immediate_hit");
             return cachedSummary;
         }
 
@@ -74,9 +71,6 @@ public class ReviewSummaryService {
             }
 
             log.info("{} 락 획득!", lockKey);
-            meterRegistry.counter("cache.lock.acquired",
-                    "cache_name", "postReviewSummary"
-            ).increment();
 
             cachedSummary = getCachedSummary(postId);
             if (cachedSummary != null) {
@@ -87,7 +81,6 @@ public class ReviewSummaryService {
                         "hit_type", "after_lock_wait"
                 ).increment();
 
-                recordResponseTime(startTime, "after_lock_hit");
                 return cachedSummary;
             }
 
@@ -105,17 +98,11 @@ public class ReviewSummaryService {
                                             .map(Review::getComment)
                                             .collect(Collectors.joining("\n"));
 
-                Timer.Sample llmTimer = Timer.start(meterRegistry);
-
                 cachedSummary = chatClient.prompt()
                                           .system(reviewSummaryPrompt)
                                           .user("후기:\n" + reviewsText)
                                           .call()
                                           .content();
-
-                llmTimer.stop(meterRegistry.timer("llm.call.duration",
-                        "operation", "review_summary"
-                ));
             }
 
             Objects.requireNonNull(cacheManager.getCache("postReviewSummary")).put(postId, cachedSummary);
@@ -127,10 +114,6 @@ public class ReviewSummaryService {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            meterRegistry.counter("cache.error",
-                    "cache_name", "postReviewSummary",
-                    "error_type", "interrupted"
-            ).increment();
             throw new RuntimeException("락 획득 중 인터럽트", e);
         } finally {
             if (lock.isHeldByCurrentThread()) {
@@ -148,14 +131,6 @@ public class ReviewSummaryService {
             return cache.get(postId, String.class);
         }
         return null;
-    }
-
-    private void recordResponseTime(long startTime, String resultType) {
-        long duration = System.currentTimeMillis() - startTime;
-        meterRegistry.timer("cache.response.time",
-                "cache_name", "postReviewSummary",
-                "result_type", resultType
-        ).record(duration, TimeUnit.MILLISECONDS);
     }
 
     @Cacheable(value = "memberReviewSummary", key = "#memberId")
