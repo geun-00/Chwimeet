@@ -38,6 +38,24 @@ public class ReviewSummaryService {
     @Value("${custom.ai.author-review-summary-prompt}")
     private String authorReviewSummaryPrompt;
 
+    public String summarizePostReviewsV0(Long postId) {
+        List<Review> reviews = reviewQueryRepository.findTop30ByPostId(postId);
+
+        if (reviews.isEmpty()) {
+            return "후기가 없습니다.";
+        }
+
+        String reviewsText = reviews.stream()
+                                    .map(Review::getComment)
+                                    .collect(Collectors.joining("\n"));
+
+        return chatClient.prompt()
+                         .system(reviewSummaryPrompt)
+                         .user("후기:\n" + reviewsText)
+                         .call()
+                         .content();
+    }
+
     public String summarizePostReviews(Long postId) {
         String lockKey = "lock:postReviewSummary:" + postId;
         RLock lock = redissonClient.getLock(lockKey);
@@ -168,13 +186,13 @@ public class ReviewSummaryService {
         }
 
         String reviewsText = reviews.stream()
-                .map(Review::getComment)
-                .collect(Collectors.joining("\n"));
+                                    .map(Review::getComment)
+                                    .collect(Collectors.joining("\n"));
 
         return chatClient.prompt()
-                .system(authorReviewSummaryPrompt)
-                .user("후기:\n" + reviewsText)
-                .call()
-                .content();
+                         .system(authorReviewSummaryPrompt)
+                         .user("후기:\n" + reviewsText)
+                         .call()
+                         .content();
     }
 }
