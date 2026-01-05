@@ -4,6 +4,13 @@ spring:
     username: ${SPRING__DATASOURCE__USERNAME}
     password: ${SPRING__DATASOURCE__PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        use_sql_comments: false
 
   ai:
     vectorstore:
@@ -14,3 +21,8 @@ spring:
         table-name: vector_store
         dimensions: 1536
         distance-type: COSINE
+
+logging:
+  level:
+    com.back: DEBUG
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG

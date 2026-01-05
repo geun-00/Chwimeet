@@ -338,9 +338,9 @@ docker run -d \
   --name redis_exporter \
   --network common \
   -p 9121:9121 \
-  -e REDIS_PASSWORD=airbnb2m \
+  -e REDIS_PASSWORD=${var.password_1} \
   oliver006/redis_exporter \
-  --redis.addr=redis://redis:30432
+  --redis.addr=redis://redis:6379
 
 echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_access_token_1_owner} --password-stdin
 
