@@ -78,7 +78,6 @@ public class ReviewSummaryService {
                     "cache_name", "postReviewSummary"
             ).increment();
 
-/*
             cachedSummary = getCachedSummary(postId);
             if (cachedSummary != null) {
                 log.info("캐시 히트 (락 후): postId={} - 다른 스레드가 생성함", postId);
@@ -91,7 +90,6 @@ public class ReviewSummaryService {
                 recordResponseTime(startTime, "after_lock_hit");
                 return cachedSummary;
             }
-*/
 
             log.info("캐시 미스 - LLM 호출: postId={}", postId);
             meterRegistry.counter("cache.miss",
