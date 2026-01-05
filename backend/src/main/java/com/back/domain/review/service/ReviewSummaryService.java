@@ -2,6 +2,8 @@ package com.back.domain.review.service;
 
 import com.back.domain.review.entity.Review;
 import com.back.domain.review.repository.ReviewQueryRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -28,6 +30,7 @@ public class ReviewSummaryService {
     private final CacheManager cacheManager;
     private final RedissonClient redissonClient;
     private final ReviewQueryRepository reviewQueryRepository;
+    private final MeterRegistry meterRegistry;
 
     @Value("${custom.ai.review-summary-prompt}")
     private String reviewSummaryPrompt;
@@ -35,103 +38,65 @@ public class ReviewSummaryService {
     @Value("${custom.ai.author-review-summary-prompt}")
     private String authorReviewSummaryPrompt;
 
-    public ResponseEntity<String> summarizePostReviews(Long postId) {
+    public String summarizePostReviews(Long postId) {
         String lockKey = "lock:postReviewSummary:" + postId;
         RLock lock = redissonClient.getLock(lockKey);
 
         long startTime = System.currentTimeMillis();
 
         String cachedSummary = getCachedSummary(postId);
+
         if (cachedSummary != null) {
             log.info("캐시 히트 (락 전): postId={}", postId);
-            return ResponseEntity.ok()
-                                 .header("X-Cache-Status", "HIT")
-                                 .header("X-Cache-Source", "BEFORE_LOCK")
-                                 .body(cachedSummary);
-        }
+            meterRegistry.counter("cache.hit",
+                    "cache_name", "postReviewSummary",
+                    "hit_type", "immediate"
+            ).increment();
 
-        try {
-            boolean lockAcquired = lock.tryLock(15, 20, TimeUnit.SECONDS);
-            long lockWaitTime = System.currentTimeMillis() - startTime;
-
-            if (!lockAcquired) {
-                log.error("락 획득 실패: postId={}", postId);
-                throw new RuntimeException("락 획득 실패");
-            }
-
-            log.info("{} 락 획득! (대기시간: {}ms)", lockKey, lockWaitTime);
-
-            cachedSummary = getCachedSummary(postId);
-            if (cachedSummary != null) {
-                log.info("캐시 히트 (락 후): postId={} - 다른 스레드가 생성함", postId);
-                return ResponseEntity.ok()
-                                     .header("X-Cache-Status", "HIT")
-                                     .header("X-Cache-Source", "AFTER_LOCK")
-                                     .header("X-Lock-Wait-Time", String.valueOf(lockWaitTime))
-                                     .body(cachedSummary);
-            }
-
-            log.info("캐시 미스 - LLM 호출: postId={}", postId);
-            List<Review> reviews = reviewQueryRepository.findTop30ByPostId(postId);
-
-            if (reviews.isEmpty()) {
-                cachedSummary = "후기가 없습니다.";
-            } else {
-                String reviewsText = reviews.stream()
-                                            .map(Review::getComment)
-                                            .collect(Collectors.joining("\n"));
-
-                cachedSummary = chatClient.prompt()
-                                          .system(reviewSummaryPrompt)
-                                          .user("후기:\n" + reviewsText)
-                                          .call()
-                                          .content();
-            }
-
-            Objects.requireNonNull(cacheManager.getCache("postReviewSummary")).put(postId, cachedSummary);
-            log.info("캐싱 완료: postId={}", postId);
-
-            return ResponseEntity.ok()
-                                 .header("X-Cache-Status", "MISS")
-                                 .header("X-Cache-Source", "LLM_GENERATED")
-                                 .body(cachedSummary);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("락 획득 중 인터럽트", e);
-        } finally {
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
-                log.info("{} 락 해제", lockKey);
-            }
-        }
-    }
-
-    public String summarizePostReviews2(Long postId) {
-        String lockKey = "lock:postReviewSummary:" + postId;
-        RLock lock = redissonClient.getLock(lockKey);
-
-        String cachedSummary = getCachedSummary(postId);
-        if (cachedSummary != null) {
-            log.info("캐시 히트 (락 전): postId={}", postId);
+            recordResponseTime(startTime, "immediate_hit");
             return cachedSummary;
         }
 
         try {
-            if (!lock.tryLock(15, 20, TimeUnit.SECONDS)) {
+            long lockStartTime = System.currentTimeMillis();
+            boolean lockAcquired = lock.tryLock(15, 20, TimeUnit.SECONDS);
+            long lockWaitTime = System.currentTimeMillis() - lockStartTime;
+
+            meterRegistry.timer("cache.lock.wait",
+                    "cache_name", "postReviewSummary"
+            ).record(lockWaitTime, TimeUnit.MILLISECONDS);
+
+            if (!lockAcquired) {
                 log.error("락 획득 실패: postId={}", postId);
+                meterRegistry.counter("cache.lock.failed",
+                        "cache_name", "postReviewSummary"
+                ).increment();
                 throw new RuntimeException("락 획득 실패");
             }
 
             log.info("{} 락 획득!", lockKey);
+            meterRegistry.counter("cache.lock.acquired",
+                    "cache_name", "postReviewSummary"
+            ).increment();
 
             cachedSummary = getCachedSummary(postId);
             if (cachedSummary != null) {
                 log.info("캐시 히트 (락 후): postId={} - 다른 스레드가 생성함", postId);
+
+                meterRegistry.counter("cache.hit",
+                        "cache_name", "postReviewSummary",
+                        "hit_type", "after_lock_wait"
+                ).increment();
+
+                recordResponseTime(startTime, "after_lock_hit");
                 return cachedSummary;
             }
 
             log.info("캐시 미스 - LLM 호출: postId={}", postId);
+            meterRegistry.counter("cache.miss",
+                    "cache_name", "postReviewSummary"
+            ).increment();
+
             List<Review> reviews = reviewQueryRepository.findTop30ByPostId(postId);
 
             if (reviews.isEmpty()) {
@@ -141,18 +106,32 @@ public class ReviewSummaryService {
                                             .map(Review::getComment)
                                             .collect(Collectors.joining("\n"));
 
+                Timer.Sample llmTimer = Timer.start(meterRegistry);
+
                 cachedSummary = chatClient.prompt()
                                           .system(reviewSummaryPrompt)
                                           .user("후기:\n" + reviewsText)
                                           .call()
                                           .content();
+
+                llmTimer.stop(meterRegistry.timer("llm.call.duration",
+                        "operation", "review_summary"
+                ));
             }
 
             Objects.requireNonNull(cacheManager.getCache("postReviewSummary")).put(postId, cachedSummary);
             log.info("캐싱 완료: postId={}", postId);
 
+            meterRegistry.counter("cache.created",
+                    "cache_name", "postReviewSummary"
+            ).increment();
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            meterRegistry.counter("cache.error",
+                    "cache_name", "postReviewSummary",
+                    "error_type", "interrupted"
+            ).increment();
             throw new RuntimeException("락 획득 중 인터럽트", e);
         } finally {
             if (lock.isHeldByCurrentThread()) {
@@ -170,6 +149,14 @@ public class ReviewSummaryService {
             return cache.get(postId, String.class);
         }
         return null;
+    }
+
+    private void recordResponseTime(long startTime, String resultType) {
+        long duration = System.currentTimeMillis() - startTime;
+        meterRegistry.timer("cache.response.time",
+                "cache_name", "postReviewSummary",
+                "result_type", resultType
+        ).record(duration, TimeUnit.MILLISECONDS);
     }
 
     @Cacheable(value = "memberReviewSummary", key = "#memberId")
