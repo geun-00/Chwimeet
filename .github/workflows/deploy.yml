@@ -74,7 +74,12 @@ jobs:
           MYSQL_DATABASE: chwimeet
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=10
+          --health-start-period=30s
 
     steps:
       - name: Checkout code
@@ -85,6 +90,20 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+
+      # MariaDB가 완전히 준비될 때까지 추가 대기
+      - name: Wait for MariaDB
+        run: |
+          echo "Waiting for MariaDB to be ready..."
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -u root -p${{ secrets.DB_PASSWORD }} --silent; then
+              echo "MariaDB is ready!"
+              break
+            fi
+            echo "Attempt $i: MariaDB not ready yet..."
+            sleep 2
+          done
+          mysql -h 127.0.0.1 -u root -p${{ secrets.DB_PASSWORD }} -e "SELECT VERSION();"
 
       - name: Grant execute permission for gradlew
         working-directory: backend
