@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mariadb:
-        image: mariadb:10.11
+        image: mariadb:11.7.1
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
           MYSQL_DATABASE: chwimeet
