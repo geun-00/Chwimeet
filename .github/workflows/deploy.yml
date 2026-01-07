@@ -95,7 +95,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: backend/src/generated
-          key: jooq-${{ hashFiles('backend/src/main/resources/db/migration/*.sql', 'backend/build.gradle.kts') }}
+          key: jooq-${{ hashFiles('backend/src/main/resources/db/migration/*.sql', 'backend/build.gradle.kts') }}-v2
           restore-keys: |
             jooq-
 
