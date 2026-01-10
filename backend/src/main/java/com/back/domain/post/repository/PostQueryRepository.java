@@ -31,17 +31,28 @@ public class PostQueryRepository extends CustomQuerydslRepositorySupport {
 
 	public Page<Post> findFilteredPosts(String keyword, List<Long> categoryId, List<Long> regionIds,
 		Pageable pageable) {
-		return applyPagination(pageable, contentQuery -> contentQuery.selectFrom(post)
-			.leftJoin(post.postRegions, postRegion)
-			.leftJoin(postRegion.region, region)
-			.join(post.author, member)
-			.fetchJoin()
-			.where(containsKeyword(keyword), inCategoryIds(categoryId), inRegionIds(regionIds),
-				post.isBanned.isFalse()), countQuery -> countQuery.select(post.count())
-			.from(post)
-			.leftJoin(post.postRegions, postRegion)
-			.where(containsKeyword(keyword), inCategoryIds(categoryId), inRegionIds(regionIds),
-				post.isBanned.isFalse()));
+		return applyPagination(pageable,
+				contentQuery -> contentQuery
+						.selectFrom(post)
+						.leftJoin(post.postRegions, postRegion)
+						.leftJoin(postRegion.region, region)
+						.join(post.author, member)
+						.fetchJoin()
+						.where(containsKeyword(keyword),
+								inCategoryIds(categoryId),
+								inRegionIds(regionIds),
+								post.isBanned.isFalse()
+						),
+				countQuery -> countQuery
+						.select(post.count())
+						.from(post)
+						.leftJoin(post.postRegions, postRegion)
+						.where(containsKeyword(keyword),
+								inCategoryIds(categoryId),
+								inRegionIds(regionIds),
+								post.isBanned.isFalse()
+						)
+		);
 	}
 
 	private BooleanExpression containsKeyword(String keyword) {

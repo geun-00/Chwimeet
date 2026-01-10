@@ -106,22 +106,28 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public PagePayload<PostListResBody> getPostList(Pageable pageable, String keyword, List<Long> categoryIds,
-		List<Long> regionIds, Long memberId) {
-		boolean hasFilter = (keyword != null && !keyword.isBlank()) || categoryIds != null || (regionIds != null
-			&& !regionIds.isEmpty());
+	public PagePayload<PostListResBody> getPostList(Pageable pageable,
+													String keyword,
+													List<Long> categoryIds,
+													List<Long> regionIds,
+													Long memberId) {
+		boolean hasFilter = (keyword != null && !keyword.isBlank()) ||
+				categoryIds != null ||
+				(regionIds != null && !regionIds.isEmpty());
 
-		if (regionIds != null && regionIds.isEmpty())
+		if (regionIds != null && regionIds.isEmpty()) {
 			regionIds = null;
+		}
 
-		Page<Post> postPage =
-			hasFilter ? this.postQueryRepository.findFilteredPosts(keyword, categoryIds, regionIds, pageable) :
-				this.postRepository.findByIsBannedFalse(pageable);
+		Page<Post> postPage = hasFilter
+				? this.postQueryRepository.findFilteredPosts(keyword, categoryIds, regionIds, pageable)
+				: this.postRepository.findByIsBannedFalse(pageable);
 
 		Page<PostListResBody> mappedPage = postPage.map(post -> {
 
-			boolean isFavorite = memberId != null && !post.getAuthor().getId().equals(memberId)
-				&& this.postFavoriteRepository.findByMemberIdAndPostId(memberId, post.getId()).isPresent();
+			boolean isFavorite = memberId != null
+					&& !post.getAuthor().getId().equals(memberId)
+					&& this.postFavoriteRepository.findByMemberIdAndPostId(memberId, post.getId()).isPresent();
 
 			String thumbnail = postImageService.toThumbnailUrl(post);
 

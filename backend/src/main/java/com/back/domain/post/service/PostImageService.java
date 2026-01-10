@@ -105,11 +105,11 @@ public class PostImageService {
 
 	public String toThumbnailUrl(Post post) {
 		return post.getImages()
-			.stream()
-			.filter(PostImage::getIsPrimary)
-			.findFirst()
-			.map(img -> s3.getPostThumbnailUrl(img.getImageUrl()))
-			.orElse(null);
+				   .stream()
+				   .filter(PostImage::getIsPrimary)
+				   .findFirst()
+				   .map(img -> s3.getPostThumbnailUrl(img.getImageUrl()))
+				   .orElse(null);
 	}
 
 	public String toProfileThumbnailUrl(String originalUrl) {
