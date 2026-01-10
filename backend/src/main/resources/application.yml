@@ -23,8 +23,9 @@ spring:
       hibernate:
         format_sql: true
         highlight_sql: true
-        use_sql_comments: true
         default_batch_fetch_size: 100
+        session_factory:
+          statement_inspector: com.back.global.web.query.QueryCountInspector
       jdbc:
         time_zone: Asia/Seoul
     open-in-view: false
